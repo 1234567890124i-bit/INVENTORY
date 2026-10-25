@@ -1,0 +1,530 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><script>
+(function(){try{var t=localStorage.getItem('radar-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}})();
+window.saveFile=async function(name,data,mime){
+  try{if(window.claude&&claude.use){const d=await claude.use('downloads');if(d){await d.save({filename:name,data});return}}}catch(e){if(e&&e.code==='declined')return}
+  const blob=data instanceof Blob?data:new Blob([data],{type:mime||'application/octet-stream'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();
+};
+window.saveWB=function(wb,name){return saveFile(name+'.xlsx',XLSX.write(wb,{bookType:'xlsx',type:'array'}))};
+</script>
+<style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:var(--ink0);color:var(--text)}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}.tools.hasx{display:flex;gap:10px;align-items:stretch}.tools.hasx input{flex:1;width:auto;min-width:0}
+.xbtn{font-family:inherit;font-size:14px;background:transparent;color:var(--gold2);border:1px solid var(--gold2);padding:0 18px;cursor:pointer;white-space:nowrap}
+.xbtn:hover{background:var(--gold2);color:var(--onGold)}
+.fbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;padding:12px 0;margin-bottom:10px;background:var(--fbarbg);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.fbar label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--mute)}
+.fbar select,.fbar input{font-family:inherit;font-size:14px;background:var(--inbg);color:var(--text);border:1px solid var(--inbd);padding:8px 10px;min-width:190px}
+.fbar input{min-width:110px;width:110px}
+.fbar .xbtn{height:38px}
+</style></head><body>
+<title>رادار الراكد</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap">
+<style>
+/* Layout: letterboxed cinematic hero, then a scan-first dashboard (KPIs, branch ranking, severity, SKUs, heatmap, table). Single dark look by design. */
+:root{
+  --f-display:"Reem Kufi","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Arabic","Segoe UI",Tahoma,system-ui,sans-serif;
+  --ink0:#f5f0e4;--ink1:#fffdf8;--ink2:#efe7d4;--line:#dcd0b6;--text:#2a2318;--mute:#6a604f;--gold:#9c6b12;--gold2:#8a5a0a;--ember:#c23f25;--amber:#a9560a;--sand:#8a6a22;--slate:#3b6f6c;--teal:#2c766d;--good:#2d7343;--bad:#b23b2a;--dim:#70664f;--onGold:#fff8ea;--tint:rgba(42,35,24,.06);--tint2:rgba(42,35,24,.045);--hm:214,150,40;--hmhi:#2a2318;--bar:#e3d8c0;--tipbg:#fffdf8;--tipsh:0 6px 24px rgba(42,35,24,.18);--fbarbg:rgba(245,240,228,.94);--inbg:#fffdf8;--inbd:#c9bb9a;--hero0:#faf5e9;--heroA:rgba(217,164,65,.28);--heroB:rgba(229,87,58,.10);--g1:#d9a441;--g3:#5c3a04;--glow:rgba(156,107,18,.22);--goldsoft:rgba(156,107,18,.10);--grain:.05;--ic-sun:none;--ic-moon:inline-flex;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink0:#09080a;--ink1:#131116;--ink2:#1c1a20;--line:#2c2830;--text:#f1ebdf;--mute:#9d9486;--gold:#d9a441;--gold2:#e0b04f;--ember:#e5573a;--amber:#e58a3c;--sand:#cfb27a;--slate:#6f9a97;--teal:#6fa8a0;--good:#7fb08a;--bad:#d9776b;--dim:#8a8174;--onGold:#1a1205;--tint:rgba(255,255,255,.04);--tint2:rgba(255,255,255,.03);--hm:217,164,65;--hmhi:#1a1205;--bar:#000;--tipbg:#000;--tipsh:none;--fbarbg:rgba(15,13,11,.94);--inbg:#0e0d0b;--inbd:#3a352d;--hero0:#0d0b0f;--heroA:rgba(217,164,65,.20);--heroB:rgba(229,87,58,.14);--g1:#fff3d2;--g3:#8a5d14;--glow:rgba(217,164,65,.28);--goldsoft:rgba(217,164,65,.08);--grain:.07;--ic-sun:inline-flex;--ic-moon:none;color-scheme:dark}}
+:root[data-theme="dark"]{--ink0:#09080a;--ink1:#131116;--ink2:#1c1a20;--line:#2c2830;--text:#f1ebdf;--mute:#9d9486;--gold:#d9a441;--gold2:#e0b04f;--ember:#e5573a;--amber:#e58a3c;--sand:#cfb27a;--slate:#6f9a97;--teal:#6fa8a0;--good:#7fb08a;--bad:#d9776b;--dim:#8a8174;--onGold:#1a1205;--tint:rgba(255,255,255,.04);--tint2:rgba(255,255,255,.03);--hm:217,164,65;--hmhi:#1a1205;--bar:#000;--tipbg:#000;--tipsh:none;--fbarbg:rgba(15,13,11,.94);--inbg:#0e0d0b;--inbd:#3a352d;--hero0:#0d0b0f;--heroA:rgba(217,164,65,.20);--heroB:rgba(229,87,58,.14);--g1:#fff3d2;--g3:#8a5d14;--glow:rgba(217,164,65,.28);--goldsoft:rgba(217,164,65,.08);--grain:.07;--ic-sun:inline-flex;--ic-moon:none;color-scheme:dark}
+:root[data-theme="light"]{--ink0:#f5f0e4;--ink1:#fffdf8;--ink2:#efe7d4;--line:#dcd0b6;--text:#2a2318;--mute:#6a604f;--gold:#9c6b12;--gold2:#8a5a0a;--ember:#c23f25;--amber:#a9560a;--sand:#8a6a22;--slate:#3b6f6c;--teal:#2c766d;--good:#2d7343;--bad:#b23b2a;--dim:#70664f;--onGold:#fff8ea;--tint:rgba(42,35,24,.06);--tint2:rgba(42,35,24,.045);--hm:214,150,40;--hmhi:#2a2318;--bar:#e3d8c0;--tipbg:#fffdf8;--tipsh:0 6px 24px rgba(42,35,24,.18);--fbarbg:rgba(245,240,228,.94);--inbg:#fffdf8;--inbd:#c9bb9a;--hero0:#faf5e9;--heroA:rgba(217,164,65,.28);--heroB:rgba(229,87,58,.10);--g1:#d9a441;--g3:#5c3a04;--glow:rgba(156,107,18,.22);--goldsoft:rgba(156,107,18,.10);--grain:.05;--ic-sun:none;--ic-moon:inline-flex;color-scheme:light}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--ink0);color:var(--text);font-family:var(--f-body);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0;direction:rtl;overflow-x:hidden;
+}
+body::after{ /* film grain + vignette */
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:50;opacity:var(--grain);
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+}
+.wrap{max-width:1240px;margin:0 auto}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+
+/* HERO */
+.hero{
+  position:relative;margin:0 calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:56px max(16px,env(safe-area-inset-left,0px)) 40px;
+  background:
+    radial-gradient(60% 80% at 78% 10%,var(--heroA),transparent 60%),
+    radial-gradient(50% 70% at 10% 100%,var(--heroB),transparent 65%),
+    linear-gradient(180deg,var(--hero0),var(--ink0));
+  border-bottom:1px solid var(--line);overflow:hidden;
+}
+.hero::before,.hero::after{content:"";position:absolute;left:0;right:0;height:22px;background:var(--bar);z-index:2}
+.hero::before{top:0}.hero::after{bottom:0}
+.beam{position:absolute;inset:-20% 40% -20% -10%;background:linear-gradient(100deg,transparent 30%,rgba(217,164,65,.07) 50%,transparent 70%);transform:rotate(8deg);animation:sweep 9s ease-in-out infinite alternate}
+@keyframes sweep{from{transform:translateX(-12%) rotate(8deg)}to{transform:translateX(30%) rotate(8deg)}}
+.hero-in{position:relative;z-index:3;max-width:1240px;margin:0 auto;display:grid;grid-template-columns:1.1fr .9fr;gap:32px;align-items:end}
+.kicker{font-size:12px;letter-spacing:.18em;color:var(--gold);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.kicker i{width:34px;height:1px;background:var(--gold);display:inline-block}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(40px,7vw,88px);line-height:1.05;margin:14px 0 14px;text-wrap:balance}
+h1 em{font-style:normal;color:var(--gold)}
+.lede{color:var(--mute);max-width:46ch;margin:0;font-size:16px}
+.big{text-align:left;direction:ltr}
+.big .v{font-family:var(--f-display);font-weight:700;font-size:clamp(84px,15vw,190px);line-height:.9;letter-spacing:-.02em;
+  background:linear-gradient(180deg,var(--g1),var(--gold) 55%,var(--g3));-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 8px 40px var(--glow))}
+.big .l{font-family:var(--f-body);direction:rtl;text-align:right;color:var(--mute);font-size:14px;margin-top:10px}
+.big .l b{color:var(--text);font-weight:500}
+
+/* STRIP */
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin:28px 0}
+.k{background:var(--ink1);padding:18px 20px;min-width:0}
+.k .t{color:var(--mute);font-size:12.5px;letter-spacing:.04em}
+.k .n{font-family:var(--f-display);font-size:clamp(28px,4vw,40px);font-weight:700;line-height:1.15;margin-top:4px}
+.k .s{color:var(--mute);font-size:12.5px}
+.k.alert .n{color:var(--ember)}
+
+/* TOOLBAR */
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin:0 0 18px}
+.seg{display:inline-flex;border:1px solid var(--line);background:var(--ink1)}
+.seg button{background:none;border:0;padding:8px 16px;color:var(--mute)}
+.seg button[aria-pressed="true"]{background:var(--gold);color:var(--onGold);font-weight:600}
+.chip{display:inline-flex;gap:10px;align-items:center;border:1px solid var(--gold);color:var(--gold);padding:6px 6px 6px 14px;background:var(--goldsoft)}
+.chip button{background:var(--gold);color:var(--onGold);border:0;padding:2px 10px;font-weight:600}
+.chip[hidden]{display:none}
+
+/* PANELS */
+.grid{display:grid;grid-template-columns:1.25fr 1fr;gap:20px}
+.panel{background:var(--ink1);border:1px solid var(--line);padding:22px;min-width:0}
+.panel h2{font-family:var(--f-display);font-size:22px;margin:0 0 2px;font-weight:700}
+.panel .sub{color:var(--mute);font-size:13px;margin:0 0 18px}
+.full{grid-column:1/-1}
+
+.rows{display:flex;flex-direction:column;gap:6px}
+.r{display:grid;grid-template-columns:120px 1fr 56px;gap:12px;align-items:center;background:none;border:0;padding:4px 6px;text-align:right;width:100%}
+.r:hover,.r.on{background:var(--ink2)}
+.r .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.r .tr{height:14px;background:var(--tint);position:relative;direction:rtl}
+.r .fl{position:absolute;inset:0 0 0 auto;background:var(--gold);transform-origin:right;animation:grow .9s cubic-bezier(.2,.7,.2,1) both}
+.r.dim{opacity:.38}
+.r .fl i{position:absolute;inset:0 0 0 auto;background:var(--ember)}
+.r .vv{font-size:14px;text-align:left;font-weight:500}
+@keyframes grow{from{transform:scaleX(0)}}
+.legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--mute);font-size:12.5px;margin-top:14px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;margin-left:6px;background:var(--c);vertical-align:-1px}
+
+/* DONUT */
+.donut{display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:center}
+.donut svg{width:100%;height:auto;max-width:200px}
+.sv{display:flex;flex-direction:column;gap:10px}
+.sv div{display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:baseline;font-size:14px}
+.sv div::before{content:"";width:10px;height:10px;background:var(--c);align-self:center}
+.sv small{color:var(--mute);display:block;font-size:12px}
+
+/* HEATMAP */
+.scroll{overflow-x:auto;max-width:100%}
+table{border-collapse:separate;border-spacing:2px;width:100%}
+.hm th{font-weight:400;color:var(--mute);font-size:11.5px;padding:2px 4px;white-space:nowrap}
+.hm th.rl{text-align:right;position:sticky;right:0;background:var(--ink1);max-width:230px;overflow:hidden;text-overflow:ellipsis;color:var(--text);font-size:12.5px;z-index:1}
+.hm td{min-width:38px;height:30px;text-align:center;font-size:11.5px;background:var(--tint2);color:var(--text)}
+.hm td.h{background:rgba(var(--hm),var(--a));color:var(--tc,var(--text))}
+
+/* TABLE */
+.tools{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+input[type=search]{flex:1;min-width:200px;background:var(--ink0);border:1px solid var(--line);color:var(--text);padding:9px 12px;font:inherit}
+.tbl{max-height:560px;overflow:auto;border:1px solid var(--line)}
+.tbl table{border-spacing:0;min-width:760px}
+.tbl th{position:sticky;top:0;background:var(--ink2);text-align:right;padding:10px 12px;font-weight:500;font-size:13px;color:var(--mute);cursor:pointer;white-space:nowrap;z-index:2}
+.tbl th:hover{color:var(--text)}
+.tbl td{padding:9px 12px;border-top:1px solid var(--line);font-size:13.5px}
+.tbl td.it{max-width:380px}
+.pill{display:inline-block;padding:1px 10px;font-size:12px;border:1px solid var(--c);color:var(--c);white-space:nowrap}
+.cnt{color:var(--mute);font-size:13px;margin-top:10px}
+
+#tip{position:fixed;z-index:60;pointer-events:none;background:var(--tipbg);box-shadow:var(--tipsh);border:1px solid var(--gold);padding:8px 12px;font-size:13px;max-width:280px;opacity:0;transition:opacity .12s}
+footer{color:var(--mute);font-size:12.5px;padding:32px 0 48px;border-top:1px solid var(--line);margin-top:28px;display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
+
+@media(max-width:900px){
+  .hero-in,.grid{grid-template-columns:1fr}
+  .strip{grid-template-columns:repeat(2,1fr)}
+  .big{text-align:right}
+  .r{grid-template-columns:96px 1fr 44px}
+  .donut{grid-template-columns:1fr;justify-items:center}
+  .sv{width:100%}
+}
+@media(prefers-reduced-motion:reduce){.beam,.r .fl{animation:none}html{scroll-behavior:auto}}
+.fbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;padding:12px 0;margin-bottom:10px;background:var(--fbarbg);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.fbar label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--mute)}
+.fbar select,.fbar input{font-family:inherit;font-size:14px;background:var(--inbg);color:var(--text);border:1px solid var(--inbd);padding:8px 10px;min-width:190px}
+.fbar input{min-width:110px;width:110px}
+.fbar .xbtn{height:38px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--ink0);z-index:10}
+.tg{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);left:max(16px,env(safe-area-inset-left,0px));z-index:55;display:inline-flex;align-items:center;gap:8px;padding:9px 14px;background:var(--ink1);border:1px solid var(--line);color:var(--text);font-size:13px;box-shadow:var(--tipsh)}
+.tg:hover{border-color:var(--gold)}
+.tg svg{width:16px;height:16px;flex:none}
+.tg .a{display:var(--ic-sun);align-items:center;gap:8px}.tg .b{display:var(--ic-moon);align-items:center;gap:8px}
+@media print{.tg{display:none}}
+</style>
+
+<div class="hero">
+  <div class="beam"></div>
+  <div class="hero-in">
+    <div>
+      <div class="kicker"><i></i>صواني المعرض · 17 يوليو – 14 أكتوبر 2026</div>
+      <h1>رأس مال <em>نائم</em><br>على الأرفف</h1>
+      <p class="lede">الأصناف التي يزيد مخزونها بالفرع على مبيعات آخر 90 يوماً بثلاث وحدات أو أكثر. اضغط على أي فرع لتعرف أين يتركز الركود.</p>
+    </div>
+    <div class="big">
+      <div class="v num" id="heroNum">0</div>
+      <div class="l"><b id="heroLines">0</b> صنفاً راكداً بالفروع، <b id="heroNo">0</b> منها بلا أي مبيعات</div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="fbar" id="fbar">
+    <label>الفرع<select id="fsel"><option value="">كل الفروع</option></select></label>
+    <label>أقل كمية للسطر (لا تقل عن 3، الأقل منها لا يتحرك)<input id="fmin" type="number" min="3" max="50" value="3"></label>
+    <button type="button" class="xbtn" id="freset">إعادة ضبط الفلاتر</button>
+  </div>
+  <div class="strip" id="strip"></div>
+
+  <div class="bar">
+    <div class="seg" role="group" aria-label="مقياس الفروع">
+      <button type="button" data-m="units" aria-pressed="true">الوحدات الراكدة</button>
+      <button type="button" data-m="lines" aria-pressed="false">عدد الأصناف</button>
+      <button type="button" data-m="nosale" aria-pressed="false">بلا مبيعات</button>
+    </div>
+    <div class="chip" id="chip" hidden><span id="chipTxt"></span><button type="button" id="chipX">إلغاء الفلتر</button></div>
+  </div>
+
+  <div class="grid">
+    <section class="panel">
+      <h2>ترتيب الفروع</h2>
+      <p class="sub" id="brSub">اضغط على فرع لتصفية باقي اللوحة</p>
+      <div class="rows" id="branches"></div>
+      <div class="legend"><span style="--c:var(--gold)">راكد بمبيعات</span><span style="--c:var(--ember)">راكد بلا مبيعات (في وضع الوحدات)</span></div>
+    </section>
+
+    <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+      <section class="panel">
+        <h2>شدة الركود</h2>
+        <p class="sub">حسب تغطية المخزون بالأيام عند معدل البيع الحالي</p>
+        <div class="donut"><div id="donut"></div><div class="sv" id="sev"></div></div>
+      </section>
+      <section class="panel">
+        <h2>أكثر الأصناف ركوداً</h2>
+        <p class="sub" id="skuSub">إجمالي الوحدات الراكدة لكل صنف</p>
+        <div class="rows" id="skus"></div>
+      </section>
+    </div>
+
+    <section class="panel full">
+      <h2>خريطة الصنف والفرع</h2>
+      <p class="sub">أعلى 12 صنفاً راكداً، والرقم في الخلية هو الوحدات الراكدة. كلما زاد لمعان الخلية زادت الكمية.</p>
+      <div class="scroll"><table class="hm" id="heat"></table></div>
+    </section>
+
+    <section class="panel full" id="planSec">
+      <h2>خطة التحريك من فرع إلى فرع</h2>
+      <p class="sub">كل الراكد في الفروع يتحرك إلى الفروع الأعلى مبيعاً للصنف في آخر 90 يوماً. بدون مسافة وبدون المشغل.</p>
+      <div class="strip" id="planK" style="margin-bottom:16px"></div>
+      <div class="tools hasx"><input type="search" id="pq" placeholder="ابحث بالصنف أو الكود أو الفرع" aria-label="بحث في الخطة"><button type="button" class="xbtn" id="xplan"></button><button type="button" class="xbtn" id="xstag2"></button></div>
+      <div class="tbl"><table id="ptbl"></table></div>
+      <div id="bwrap" style="display:none">
+        <h3 id="bouth" style="margin:6px 0 10px;font-size:16px;color:var(--gold2)"></h3>
+        <div class="tbl"><table id="bout"></table></div>
+        <h3 id="binh" style="margin:22px 0 10px;font-size:16px;color:var(--good)"></h3>
+        <div class="tbl"><table id="bin"></table></div>
+      </div>
+      <div class="cnt" id="pcnt"></div>
+    </section>
+
+    <section class="panel full">
+      <h2>تفاصيل الأصناف</h2>
+      <p class="sub">كل الصفوف مع البحث والترتيب. اضغط على عنوان العمود لترتيب الجدول.</p>
+      <div class="tools hasx"><input type="search" id="q" placeholder="ابحث بالاسم أو الكود أو الفرع" aria-label="بحث"><button type="button" class="xbtn" id="xbtn"></button></div>
+      <div class="tbl"><table id="tbl"></table></div>
+      <div class="cnt" id="cnt"></div>
+    </section>
+  </div>
+
+  <footer>
+    <span>المصدر: Power BI، موديل مبيعات ليفانا تحليل (جداول RW_). الفترة من 17 يوليو إلى 14 أكتوبر 2026. الفروع والمعارض فقط، والمشاغل في مرحلة لاحقة.</span>
+    <span>الراكد = المتاح − المباع في 90 يوماً، ويظهر الصنف من 3 وحدات فأكثر. استُثنيت الربوة والفلاح وحفر الباطن.</span>
+  </footer>
+</div>
+<button type="button" class="tg" id="tg" aria-label="تبديل الوضع"><span class="a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>وضع نهاري</span><span class="b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>وضع ليلي</span></button>
+<div id="tip"></div>
+
+<script>
+const D=[["فرع الاحساء","03003523","صينيه سراميك مرتفعه بيضاوي سكري S-33",7,1,6,630.0],["فرع الاحساء","03003646","بوكس سكشن هدايا اسود بدرج S-152",12,6,6,180.0],["فرع الاحساء","03003099","بنبنيرة 2024 ابيض k-5",6,0,6,null],["فرع الاحساء","03003532","صينيه خشب مربع S-130",6,0,6,null],["فرع الاحساء","03003433","صينيه ريزن اسكاي دائري s-179",7,2,5,315.0],["فرع الاحساء","03003611","صينيه زجاج مسننه الحواف S-61",8,3,5,240.0],["فرع الاحساء","03003348","صحن رخام بقاعدة جلد بنى فاتح k-199",5,0,5,null],["فرع الاحساء","03003512","صنية سيراميك k-185-l اخضر كبير",5,0,5,null],["فرع الاحساء","03003513","صنية سيراميك k-186-l زخرفة ديور كبير",5,0,5,null],["فرع الاحساء","03003116","بنبنيرة 2024 اسود k-1",4,0,4,null],["فرع الاحساء","03003524","صينيه سراميك مرتفعه بيضاوي بخطوط S-35",5,1,4,450.0],["فرع الاحساء","03003628","سكشن هدايا جلد ثلاث دوائر S-46",5,1,4,450.0],["فرع الاحساء","03003095","صنية ريزن زخارف بارزة k-140",4,0,4,null],["فرع الاحساء","03003319","صنية مستطيلة حجر بركانى k-227",4,0,4,null],["فرع الاحساء","03003320","صنية زجاج دائرى بنى K-146",4,0,4,null],["فرع الاحساء","03003438","صينيه ريزن اسكاي ورده على القاعده s-184",4,0,4,null],["فرع الاحساء","03003650","صينيه زجاج دائري ذهبي S-10",4,0,4,null],["فرع الاحساء","03003608","صينيه ريزن راس غزال S-132",6,3,3,180.0],["فرع الاحساء","03003615","صينيه ملامين بيج بيضاوي كبير s-3",6,3,3,180.0],["فرع الاحساء","03003638","صينيه زجاج شفاف S-164 (معمول)",8,5,3,144.0],["فرع الاحساء","03003442","صينيه زجاج دائري رمادي S-9",4,1,3,360.0],["فرع الاحساء","03003648","فازه سكشن هدايا S-111",4,1,3,360.0],["فرع الاحساء","03003352","صنية سيراميك k-185-s اخضر صغير",3,0,3,null],["فرع الاحساء","03003355","صنية زجاج ديكور دوائر K-142",3,0,3,null],["فرع الاحساء","03003606","صينيه خشب مضغوط بيج مسطح كبير s-168",3,0,3,null],["فرع الخرج","03003512","صنية سيراميك k-185-l اخضر كبير",8,1,7,720.0],["فرع الخرج","03003638","صينيه زجاج شفاف S-164 (معمول)",10,3,7,300.0],["فرع الخرج","03003438","صينيه ريزن اسكاي ورده على القاعده s-184",8,2,6,360.0],["فرع الخرج","03003523","صينيه سراميك مرتفعه بيضاوي سكري S-33",8,2,6,360.0],["فرع الخرج","03003674","صحن زجاج دائرى كبير k-109-L",5,0,5,null],["فرع الخرج","03003637","صينيه زجاج شفاف S-164 (موالح)",7,2,5,315.0],["فرع الخرج","03003324","صنية سيراميك كورة رخامى بنى K-178-2",5,0,5,null],["فرع الخرج","03003608","صينيه ريزن راس غزال S-132",6,2,4,270.0],["فرع الخرج","03003615","صينيه ملامين بيج بيضاوي كبير s-3",7,3,4,210.0],["فرع الخرج","03003606","صينيه خشب مضغوط بيج مسطح كبير s-168",5,1,4,450.0],["فرع الخرج","03003355","صنية زجاج ديكور دوائر K-142",4,0,4,null],["فرع الخرج","03003433","صينيه ريزن اسكاي دائري s-179",6,3,3,180.0],["فرع الخرج","03003524","صينيه سراميك مرتفعه بيضاوي بخطوط S-35",8,5,3,144.0],["فرع الخرج","03003646","بوكس سكشن هدايا اسود بدرج S-152",8,5,3,144.0],["فرع الخرج","03003428","صينيه استيل بيج ديكور كورات s-72",5,2,3,225.0],["فرع الخرج","03003628","سكشن هدايا جلد ثلاث دوائر S-46",5,2,3,225.0],["فرع الخرج","03003648","فازه سكشن هدايا S-111",5,2,3,225.0],["فرع الخرج","03003629","سكشن هدايا جلد ثلاث علب S-50",4,1,3,360.0],["فرع الخرج","03003352","صنية سيراميك k-185-s اخضر صغير",3,0,3,null],["فرع الخرج","03003678","صنية دائرى زجاج رمادى غامق k-43",3,0,3,null],["فرع الدمام","03003674","صحن زجاج دائرى كبير k-109-L",4,0,4,null],["فرع الدمام","03003512","صنية سيراميك k-185-l اخضر كبير",6,2,4,270.0],["فرع الدمام","03003095","صنية ريزن زخارف بارزة k-140",4,0,4,null],["فرع الدمام","03003421","صينية ريزن عيون اسود F-423B",4,0,4,null],["فرع الدمام","03003313","صنية ريزين رخامى ديكور وردة K-180",3,0,3,null],["فرع الدمام","03003673","صنية سيراميك دائرى جرانيت k-38",3,0,3,null],["فرع الدمام","03003606","صينيه خشب مضغوط بيج مسطح كبير s-168",6,3,3,180.0],["فرع الدمام","03003638","صينيه زجاج شفاف S-164 (معمول)",17,14,3,109.3],["فرع الدمام","03003319","صنية مستطيلة حجر بركانى k-227",4,1,3,360.0],["فرع الدمام","03003084","صنية سيراميك لويس فيتو كبير اسود Q-55",3,0,3,null],["فرع الدمام","03003350","صنية زجاج ديكور كأس K-34",3,0,3,null],["فرع الدمام","03003355","صنية زجاج ديكور دوائر K-142",3,0,3,null],["فرع الدمام","03003600","صينيه زجاج عميقة وسط S-84 (مكشوف)",3,0,3,null],["فرع الدمام","03003663","صنية ريزن صدف مموج Q-74",3,0,3,null],["فرع الروضة","03003355","صنية زجاج ديكور دوائر K-142",13,0,13,null],["فرع الروضة","03003638","صينيه زجاج شفاف S-164 (معمول)",14,4,10,315.0],["فرع الروضة","03003637","صينيه زجاج شفاف S-164 (موالح)",12,3,9,360.0],["فرع الروضة","03003319","صنية مستطيلة حجر بركانى k-227",7,0,7,null],["فرع الروضة","03003646","بوكس سكشن هدايا اسود بدرج S-152",6,0,6,null],["فرع الروضة","03003674","صحن زجاج دائرى كبير k-109-L",5,0,5,null],["فرع الروضة","03003352","صنية سيراميك k-185-s اخضر صغير",6,1,5,540.0],["فرع الروضة","03003649","صينيه مستطيله 3 اقسام S-108",8,3,5,240.0],["فرع الروضة","03003116","بنبنيرة 2024 اسود k-1",4,0,4,null],["فرع الروضة","03003438","صينيه ريزن اسكاي ورده على القاعده s-184",8,4,4,180.0],["فرع الروضة","03003160","بنبنيرة 2024 فضى k-4",4,0,4,null],["فرع الروضة","03003348","صحن رخام بقاعدة جلد بنى فاتح k-199",4,0,4,null],["فرع الروضة","03003324","صنية سيراميك كورة رخامى بنى K-178-2",4,1,3,360.0],["فرع الروضة","03003606","صينيه خشب مضغوط بيج مسطح كبير s-168",4,1,3,360.0],["فرع السويدي","03003606","صينيه خشب مضغوط بيج مسطح كبير s-168",11,2,9,495.0],["فرع السويدي","03003674","صحن زجاج دائرى كبير k-109-L",8,0,8,null],["فرع السويدي","03003324","صنية سيراميك كورة رخامى بنى K-178-2",8,0,8,null],["فرع السويدي","03003646","بوكس سكشن هدايا اسود بدرج S-152",8,0,8,null],["فرع السويدي","03003649","صينيه مستطيله 3 اقسام S-108",6,0,6,null],["فرع السويدي","03003628","سكشن هدايا جلد ثلاث دوائر S-46",5,0,5,null],["فرع السويدي","03003615","صينيه ملامين بيج بيضاوي كبير s-3",6,2,4,270.0],["فرع السويدي","03003638","صينيه زجاج شفاف S-164 (معمول)",10,6,4,150.0],["فرع السويدي","03003355","صنية زجاج ديكور دوائر K-142",4,0,4,null],["فرع السويدي","03003092","صنية ريزن دائرى مموج منقط k-136",3,0,3,null],["فرع السويدي","03003442","صينيه زجاج دائري رمادي S-9",4,1,3,360.0],["فرع السويدي","03003426","صينيه ديكور كسر s-1",3,0,3,null],["فرع السويدي","03003600","صينيه زجاج عميقة وسط S-84 (مكشوف)",3,0,3,null],["فرع القصيم","03003438","صينيه ريزن اسكاي ورده على القاعده s-184",11,4,7,247.5],["فرع القصيم","03003646","بوكس سكشن هدايا اسود بدرج S-152",7,0,7,null],["فرع القصيم","03003648","فازه سكشن هدايا S-111",5,0,5,null],["فرع القصيم","03003433","صينيه ريزن اسكاي دائري s-179",9,5,4,162.0],["فرع القصيم","03003434","صينيه ريزن اسكاي مسطحه ورود s-180",9,5,4,162.0],["فرع القصيم","03003638","صينيه زجاج شفاف S-164 (معمول)",7,3,4,210.0],["فرع القصيم","03003678","صنية دائرى زجاج رمادى غامق k-43",4,1,3,360.0],["فرع القصيم","03003512","صنية سيراميك k-185-l اخضر كبير",3,0,3,null],["فرع القصيم","03003633","صينيه زجاج عميقة سكري كبير S-83",3,0,3,null],["فرع الملقا","03003348","صحن رخام بقاعدة جلد بنى فاتح k-199",8,0,8,null],["فرع الملقا","03003638","صينيه زجاج شفاف S-164 (معمول)",18,11,7,147.3],["فرع الملقا","03003096","بنبنيرة 2024 استيل مزدوجة k-7",7,0,7,null],["فرع الملقا","03003674","صحن زجاج دائرى كبير k-109-L",6,0,6,null],["فرع الملقا","03003099","بنبنيرة 2024 ابيض k-5",6,0,6,null],["فرع الملقا","03003116","بنبنيرة 2024 اسود k-1",5,0,5,null],["فرع الملقا","03002273","صنية بون بينيرة C-180",4,0,4,null],["فرع الملقا","03003630","سكشن هدايا جلد استاند مفرغ اسود S-49",6,2,4,270.0],["فرع الملقا","03003646","بوكس سكشن هدايا اسود بدرج S-152",6,2,4,270.0],["فرع الملقا","03003635","صينيه زجاج مستطيله ديكور غزال S-59",8,4,4,180.0],["فرع الملقا","03003160","بنبنيرة 2024 فضى k-4",4,0,4,null],["فرع الملقا","03003319","صنية مستطيلة حجر بركانى k-227",4,0,4,null],["فرع الملقا","03003324","صنية سيراميك كورة رخامى بنى K-178-2",6,3,3,180.0],["فرع تبوك","03003095","صنية ريزن زخارف بارزة k-140",4,0,4,null],["فرع تبوك","03003443","صنية زجاج كبير فضى K-128",7,4,3,157.5],["فرع تبوك","03003648","فازه سكشن هدايا S-111",4,1,3,360.0],["فرع تبوك","03003093","صنية ريزن فازة k-138",3,0,3,null],["فرع تبوك","03003679","صنية سيراميك كحلى مع ابيض K-150",3,0,3,null],["فرع جده","03003606","صينيه خشب مضغوط بيج مسطح كبير s-168",21,3,18,630.0],["فرع جده","03003533","صينيه ملامين بيج بيضاوي صغير s-2",14,6,8,210.0],["فرع جده","03003638","صينيه زجاج شفاف S-164 (معمول)",13,5,8,234.0],["فرع جده","03003428","صينيه استيل بيج ديكور كورات s-72",10,3,7,300.0],["فرع جده","03003116","بنبنيرة 2024 اسود k-1",6,0,6,null],["فرع جده","03003097","بنبنيرة 2024 عسلى k-3",5,0,5,null],["فرع جده","03003093","صنية ريزن فازة k-138",5,0,5,null],["فرع جده","03003348","صحن رخام بقاعدة جلد بنى فاتح k-199",5,1,4,450.0],["فرع جده","03003433","صينيه ريزن اسكاي دائري s-179",8,4,4,180.0],["فرع جده","03003650","صينيه زجاج دائري ذهبي S-10",14,10,4,126.0],["فرع جده","03003525","صينيه ريزن اسكاي زخارف ذهبيه s-186",6,3,3,180.0],["فرع جده","03003287","صنية سيراميك k-183-s زيتى صغير",4,1,3,360.0],["فرع حائل","03003525","صينيه ريزن اسكاي زخارف ذهبيه s-186",11,2,9,495.0],["فرع حائل","03003637","صينيه زجاج شفاف S-164 (موالح)",15,6,9,225.0],["فرع حائل","03003615","صينيه ملامين بيج بيضاوي كبير s-3",10,3,7,300.0],["فرع حائل","03003646","بوكس سكشن هدايا اسود بدرج S-152",7,1,6,630.0],["فرع حائل","03003606","صينيه خشب مضغوط بيج مسطح كبير s-168",6,1,5,540.0],["فرع حائل","03003512","صنية سيراميك k-185-l اخضر كبير",7,2,5,315.0],["فرع حائل","03003629","سكشن هدايا جلد ثلاث علب S-50",5,0,5,null],["فرع حائل","03003678","صنية دائرى زجاج رمادى غامق k-43",5,0,5,null],["فرع حائل","03003421","صينية ريزن عيون اسود F-423B",5,1,4,450.0],["فرع حائل","03003628","سكشن هدايا جلد ثلاث دوائر S-46",6,2,4,270.0],["فرع حائل","03003319","صنية مستطيلة حجر بركانى k-227",4,0,4,null],["فرع حائل","03003324","صنية سيراميك كورة رخامى بنى K-178-2",4,0,4,null],["فرع حائل","03003355","صنية زجاج ديكور دوائر K-142",4,0,4,null],["فرع حائل","03003442","صينيه زجاج دائري رمادي S-9",4,0,4,null],["فرع حائل","03003116","بنبنيرة 2024 اسود k-1",3,0,3,null],["فرع حائل","03003648","فازه سكشن هدايا S-111",5,2,3,225.0],["فرع حائل","03003293","صنية رخام ديكور غزال k-127",4,1,3,360.0],["فرع حائل","03003078","صنية ريزن بحزام k-137",3,0,3,null],["فرع حائل","03003095","صنية ريزن زخارف بارزة k-140",3,0,3,null],["فرع حائل","03003288","صنية سيراميك k-184-s عنابى صغير",3,0,3,null],["فرع حائل","03003352","صنية سيراميك k-185-s اخضر صغير",3,0,3,null],["فرع خميس مشيط","03003638","صينيه زجاج شفاف S-164 (معمول)",11,8,3,123.8],["فرع خميس مشيط","03003078","صنية ريزن بحزام k-137",3,0,3,null],["فرع غرناطة","03003355","صنية زجاج ديكور دوائر K-142",13,0,13,null],["فرع غرناطة","03003674","صحن زجاج دائرى كبير k-109-L",10,0,10,null],["فرع غرناطة","03003319","صنية مستطيلة حجر بركانى k-227",10,0,10,null],["فرع غرناطة","03003512","صنية سيراميك k-185-l اخضر كبير",9,0,9,null],["فرع غرناطة","03003096","بنبنيرة 2024 استيل مزدوجة k-7",8,0,8,null],["فرع غرناطة","03003099","بنبنيرة 2024 ابيض k-5",8,0,8,null],["فرع غرناطة","03003116","بنبنيرة 2024 اسود k-1",7,0,7,null],["فرع غرناطة","03003350","صنية زجاج ديكور كأس K-34",7,0,7,null],["فرع غرناطة","03003097","بنبنيرة 2024 عسلى k-3",6,0,6,null],["فرع غرناطة","03003646","بوكس سكشن هدايا اسود بدرج S-152",7,1,6,630.0],["فرع غرناطة","03002272","صنية بون بينيرة C-181",5,0,5,null],["فرع غرناطة","03003437","صينيه ريزن اسكاي بقاعدة ديكور جانبي s-183",10,5,5,180.0],["فرع غرناطة","03003288","صنية سيراميك k-184-s عنابى صغير",5,0,5,null],["فرع غرناطة","03003426","صينيه ديكور كسر s-1",5,0,5,null],["فرع غرناطة","03003433","صينيه ريزن اسكاي دائري s-179",13,9,4,130.0],["فرع غرناطة","03003438","صينيه ريزن اسكاي ورده على القاعده s-184",11,7,4,141.4],["فرع غرناطة","03003589","صينيه استيل سكري S-67-M",5,1,4,450.0],["فرع غرناطة","03003606","صينيه خشب مضغوط بيج مسطح كبير s-168",5,1,4,450.0],["فرع غرناطة","03003160","بنبنيرة 2024 فضى k-4",4,0,4,null],["فرع غرناطة","03003348","صحن رخام بقاعدة جلد بنى فاتح k-199",4,0,4,null],["فرع غرناطة","03002759","صنية خزف رخام صغير c-226",3,0,3,null],["فرع غرناطة","03003615","صينيه ملامين بيج بيضاوي كبير s-3",9,6,3,135.0],["فرع غرناطة","03003648","فازه سكشن هدايا S-111",4,1,3,360.0],["فرع غرناطة","03002938","صوانى خشب بقاعدة حديد F-211",3,0,3,null],["فرع غرناطة","03002996","صنية MK-99",3,0,3,null],["فرع غرناطة","03003095","صنية ريزن زخارف بارزة k-140",3,0,3,null],["فرع غرناطة","03003320","صنية زجاج دائرى بنى K-146",3,0,3,null],["فرع غرناطة","03003354","صنية زجاج صدفة مموج رمادى K-144",3,0,3,null],["فرع مكة","03003433","صينيه ريزن اسكاي دائري s-179",16,4,12,360.0],["فرع مكة","03003638","صينيه زجاج شفاف S-164 (معمول)",14,2,12,630.0],["فرع مكة","03003613","صينيه رمضان بقاعده ديكور S-52",13,3,10,390.0],["فرع مكة","03003434","صينيه ريزن اسكاي مسطحه ورود s-180",16,7,9,205.7],["فرع مكة","03003637","صينيه زجاج شفاف S-164 (موالح)",13,4,9,292.5],["فرع مكة","03003606","صينيه خشب مضغوط بيج مسطح كبير s-168",11,3,8,330.0],["فرع مكة","03003614","صينيه اكلرك بقاعده جلد بني S-53",7,1,6,630.0],["فرع مكة","03003636","صينيه زجاج شفاف S-164 (مكشوف 190)",11,5,6,198.0],["فرع مكة","03003439","صينيه ريزن اسكاي بقاعده منخفضة s-185",6,0,6,null],["فرع مكة","03003534","صينيه خشب بيضاوي S-128",14,9,5,140.0],["فرع مكة","03003355","صنية زجاج ديكور دوائر K-142",5,0,5,null],["فرع مكة","03003426","صينيه ديكور كسر s-1",5,0,5,null],["فرع مكة","03003678","صنية دائرى زجاج رمادى غامق k-43",5,0,5,null],["فرع مكة","03003523","صينيه سراميك مرتفعه بيضاوي سكري S-33",6,2,4,270.0],["فرع مكة","03003611","صينيه زجاج مسننه الحواف S-61",8,4,4,180.0],["فرع مكة","03003650","صينيه زجاج دائري ذهبي S-10",7,3,4,210.0],["فرع مكة","03003524","صينيه سراميك مرتفعه بيضاوي بخطوط S-35",5,1,4,450.0],["فرع مكة","03003093","صنية ريزن فازة k-138",4,0,4,null],["فرع مكة","03003095","صنية ريزن زخارف بارزة k-140",4,0,4,null],["فرع مكة","03003612","صينيه زجاج بقاعده مثلث S-4",4,0,4,null],["فرع مكة","03003512","صنية سيراميك k-185-l اخضر كبير",4,1,3,360.0],["فرع وادى لبن","03003525","صينيه ريزن اسكاي زخارف ذهبيه s-186",14,3,11,420.0],["فرع وادى لبن","03003096","بنبنيرة 2024 استيل مزدوجة k-7",7,0,7,null],["فرع وادى لبن","03003674","صحن زجاج دائرى كبير k-109-L",5,0,5,null],["فرع وادى لبن","03003355","صنية زجاج ديكور دوائر K-142",6,1,5,540.0],["فرع وادى لبن","03003512","صنية سيراميك k-185-l اخضر كبير",6,1,5,540.0],["فرع وادى لبن","03003099","بنبنيرة 2024 ابيض k-5",5,0,5,null],["فرع وادى لبن","03003352","صنية سيراميك k-185-s اخضر صغير",5,0,5,null],["فرع وادى لبن","03002195","صنية خزف مزخرف اسود كبير c-223",4,0,4,null],["فرع وادى لبن","03003433","صينيه ريزن اسكاي دائري s-179",9,5,4,162.0],["فرع وادى لبن","03003649","صينيه مستطيله 3 اقسام S-108",7,3,4,210.0],["فرع وادى لبن","03003350","صنية زجاج ديكور كأس K-34",4,0,4,null],["فرع وادى لبن","03002994","صنية حروف عربية MK-72B",3,0,3,null],["فرع وادى لبن","03003116","بنبنيرة 2024 اسود k-1",4,1,3,360.0],["فرع وادى لبن","03003438","صينيه ريزن اسكاي ورده على القاعده s-184",6,3,3,180.0],["فرع وادى لبن","03003611","صينيه زجاج مسننه الحواف S-61",7,4,3,157.5],["فرع وادى لبن","03003637","صينيه زجاج شفاف S-164 (موالح)",17,14,3,109.3],["فرع وادى لبن","03003437","صينيه ريزن اسكاي بقاعدة ديكور جانبي s-183",5,2,3,225.0],["فرع وادى لبن","03003630","سكشن هدايا جلد استاند مفرغ اسود S-49",5,2,3,225.0],["فرع وادى لبن","03003678","صنية دائرى زجاج رمادى غامق k-43",4,1,3,360.0],["فرع وادى لبن","03003301","صنية زجاج فازة استيل k-96",3,0,3,null],["فرع وادى لبن","03003348","صحن رخام بقاعدة جلد بنى فاتح k-199",3,0,3,null],["فرع وادى لبن","03003426","صينيه ديكور كسر s-1",3,0,3,null],["معرض الطائف","03003647","بوكس سكشن هدايا بينك S-153",40,27,13,133.3],["معرض الطائف","03003525","صينيه ريزن اسكاي زخارف ذهبيه s-186",11,2,9,495.0],["معرض الطائف","03003605","صينيه زجاج دائري مموج S-58",11,2,9,495.0],["معرض الطائف","03003535","صينيه خشب مثلث S-129",9,5,4,162.0],["معرض الطائف","03003426","صينيه ديكور كسر s-1",4,0,4,null],["معرض الطائف","03003590","صينيه استيل سكري S-67-M (2)",4,0,4,null],["معرض الطائف","03003116","بنبنيرة 2024 اسود k-1",3,0,3,null],["معرض الطائف","03003524","صينيه سراميك مرتفعه بيضاوي بخطوط S-35",10,7,3,128.6],["معرض الطائف","03003678","صنية دائرى زجاج رمادى غامق k-43",4,1,3,360.0],["معرض الطائف","03003085","صنية سيراميك لويس فيتو صغير ابيض Q-54",3,0,3,null],["معرض الطائف","03003512","صنية سيراميك k-185-l اخضر كبير",3,0,3,null],["معرض المدينة","03003606","صينيه خشب مضغوط بيج مسطح كبير s-168",13,1,12,1170.0],["معرض المدينة","03003615","صينيه ملامين بيج بيضاوي كبير s-3",15,3,12,450.0],["معرض المدينة","03003648","فازه سكشن هدايا S-111",9,1,8,810.0],["معرض المدينة","03003426","صينيه ديكور كسر s-1",7,0,7,null],["معرض المدينة","03003116","بنبنيرة 2024 اسود k-1",5,0,5,null],["معرض المدينة","03003646","بوكس سكشن هدايا اسود بدرج S-152",10,6,4,150.0],["معرض المدينة","03003078","صنية ريزن بحزام k-137",4,0,4,null],["معرض المدينة","03003083","صنية سيراميك لويس فيتو صغير اسود Q-56",4,0,4,null],["معرض المدينة","03003093","صنية ريزن فازة k-138",4,0,4,null],["معرض المدينة","03003315","صحن رخام بقاعدة جلد سكرى k-200",3,0,3,null],["معرض المدينة","03003411","Q-71 صنية ريزن مدورة بيضاء",3,0,3,null],["معرض المدينة","03003524","صينيه سراميك مرتفعه بيضاوي بخطوط S-35",6,3,3,180.0],["معرض المدينة","03003319","صنية مستطيلة حجر بركانى k-227",4,1,3,360.0],["معرض المدينة","03003084","صنية سيراميك لويس فيتو كبير اسود Q-55",3,0,3,null],["معرض المدينة","03003348","صحن رخام بقاعدة جلد بنى فاتح k-199",3,0,3,null],["معرض المدينة","03003350","صنية زجاج ديكور كأس K-34",3,0,3,null],["معرض المدينة","03003352","صنية سيراميك k-185-s اخضر صغير",3,0,3,null],["معرض المدينة","03003659","صينية زواجات استيل اسود وذهبى n-260",3,0,3,null],["معرض المدينة","03003661","صينيه قوس n-197",3,0,3,null],["معرض المدينة","03003662","صينية زواجات سنبلة ذهبى f-123",3,0,3,null],["معرض سلمان الفارسى","03003637","صينيه زجاج شفاف S-164 (موالح)",18,8,10,202.5],["معرض سلمان الفارسى","03003355","صنية زجاج ديكور دوائر K-142",9,0,9,null],["معرض سلمان الفارسى","03003096","بنبنيرة 2024 استيل مزدوجة k-7",8,0,8,null],["معرض سلمان الفارسى","03003606","صينيه خشب مضغوط بيج مسطح كبير s-168",8,1,7,720.0],["معرض سلمان الفارسى","03003615","صينيه ملامين بيج بيضاوي كبير s-3",11,4,7,247.5],["معرض سلمان الفارسى","03003638","صينيه زجاج شفاف S-164 (معمول)",16,9,7,160.0],["معرض سلمان الفارسى","03003629","سكشن هدايا جلد ثلاث علب S-50",7,0,7,null],["معرض سلمان الفارسى","03003438","صينيه ريزن اسكاي ورده على القاعده s-184",8,2,6,360.0],["معرض سلمان الفارسى","03003649","صينيه مستطيله 3 اقسام S-108",8,2,6,360.0],["معرض سلمان الفارسى","03003313","صنية ريزين رخامى ديكور وردة K-180",5,0,5,null],["معرض سلمان الفارسى","03003099","بنبنيرة 2024 ابيض k-5",5,0,5,null],["معرض سلمان الفارسى","03003160","بنبنيرة 2024 فضى k-4",5,0,5,null],["معرض سلمان الفارسى","03003324","صنية سيراميك كورة رخامى بنى K-178-2",5,0,5,null],["معرض سلمان الفارسى","03003648","فازه سكشن هدايا S-111",5,0,5,null],["معرض سلمان الفارسى","03003348","صحن رخام بقاعدة جلد بنى فاتح k-199",5,1,4,450.0],["معرض سلمان الفارسى","03003646","بوكس سكشن هدايا اسود بدرج S-152",6,2,4,270.0],["معرض سلمان الفارسى","03003437","صينيه ريزن اسكاي بقاعدة ديكور جانبي s-183",9,5,4,162.0],["معرض سلمان الفارسى","03003319","صنية مستطيلة حجر بركانى k-227",4,0,4,null],["معرض سلمان الفارسى","03002994","صنية حروف عربية MK-72B",3,0,3,null],["معرض سلمان الفارسى","03003116","بنبنيرة 2024 اسود k-1",3,0,3,null],["معرض سلمان الفارسى","03003421","صينية ريزن عيون اسود F-423B",4,1,3,360.0],["معرض سلمان الفارسى","03003628","سكشن هدايا جلد ثلاث دوائر S-46",4,1,3,360.0],["معرض سلمان الفارسى","03003078","صنية ريزن بحزام k-137",3,0,3,null],["معرض سلمان الفارسى","03003104","فازة استيل ديكور جلد k-219",3,0,3,null]];
+const rows=D.map(r=>({b:r[0],c:r[1],n:r[2],a:r[3],s:r[4],st:r[5],cv:r[6]}));
+const SEV=[
+ {k:0,n:'بلا مبيعات',d:'لم يُبَع منه شيء في 90 يوماً',c:'var(--ember)'},
+ {k:1,n:'أكثر من سنة',d:'تغطية فوق 365 يوماً',c:'var(--amber)'},
+ {k:2,n:'6 إلى 12 شهراً',d:'تغطية 180 إلى 365 يوماً',c:'var(--sand)'},
+ {k:3,n:'أقل من 6 شهور',d:'تغطية أقل من 180 يوماً',c:'var(--slate)'}];
+rows.forEach(r=>r.sv=r.cv===null?0:r.cv>365?1:r.cv>=180?2:3);
+const short=b=>b.replace(/^فرع\s+/,'');
+const fmt=n=>Number(n).toLocaleString('en-US');
+const $=id=>document.getElementById(id);
+let sel=null,metric='units',sortK='st',sortD=-1,query='';
+const filt=()=>sel?rows.filter(r=>r.b===sel):rows;
+
+function countUp(el,to,ms=1400){
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches){el.textContent=fmt(to);return}
+  const t0=performance.now();
+  (function f(t){const p=Math.min(1,(t-t0)/ms),e=1-Math.pow(1-p,3);el.textContent=fmt(Math.round(to*e));if(p<1)requestAnimationFrame(f)})(t0);
+  el.textContent=fmt(to);
+}
+
+function strip(){
+  const f=filt(),u=f.reduce((s,r)=>s+r.st,0),no=f.filter(r=>r.sv===0),nou=no.reduce((s,r)=>s+r.st,0);
+  const br=new Set(f.map(r=>r.b)).size,sk=new Set(f.map(r=>r.c)).size;
+  const old=f.filter(r=>r.sv<=1).reduce((s,r)=>s+r.st,0);
+  $('strip').innerHTML=
+   `<div class="k"><div class="t">الوحدات الراكدة</div><div class="n num">${fmt(u)}</div><div class="s">${sel?short(sel):'كل الفروع'}</div></div>
+    <div class="k alert"><div class="t">بلا أي مبيعات</div><div class="n num">${fmt(nou)}</div><div class="s">${u?Math.round(nou/u*100):0}% من الراكد في ${fmt(no.length)} صنف</div></div>
+    <div class="k"><div class="t">تغطية فوق سنة أو بلا مبيعات</div><div class="n num">${u?Math.round(old/u*100):0}%</div><div class="s">${fmt(old)} وحدة</div></div>
+    <div class="k"><div class="t">${sel?'أصناف راكدة':'فروع / أصناف مختلفة'}</div><div class="n num">${sel?fmt(f.length):br+' / '+sk}</div><div class="s">${sel?fmt(sk)+' كود مختلف':'من '+fmt(f.length)+' سطراً راكداً'}</div></div>`;
+}
+
+function branches(){
+  const m=new Map();
+  rows.forEach(r=>{const o=m.get(r.b)||{b:r.b,units:0,lines:0,nosale:0,nu:0};o.units+=r.st;o.lines++;if(r.sv===0){o.nosale++;o.nu+=r.st}m.set(r.b,o)});
+  const a=[...m.values()].sort((x,y)=>y[metric]-x[metric]);
+  const mx=a[0][metric];
+  const unit={units:'وحدة',lines:'صنف',nosale:'صنف بلا مبيعات'}[metric];
+  $('branches').innerHTML=a.map(o=>{
+    const w=o[metric]/mx*100,e=metric==='units'?o.nu/o.units*100:0;
+    return `<button type="button" class="r${sel===o.b?' on':''}${sel&&sel!==o.b?' dim':''}" data-b="${o.b}" data-tip="${short(o.b)}|${fmt(o[metric])} ${unit}|بلا مبيعات: ${o.nosale} صنف (${o.nu} وحدة)">
+      <span class="nm">${short(o.b)}</span>
+      <span class="tr"><span class="fl" style="width:${w}%"><i style="width:${e}%"></i></span></span>
+      <span class="vv num">${fmt(o[metric])}</span></button>`}).join('');
+  $('branches').querySelectorAll('.r').forEach(b=>b.onclick=()=>{sel=sel===b.dataset.b?null:b.dataset.b;update()});
+}
+
+function donut(){
+  const f=filt(),tot=f.reduce((s,r)=>s+r.st,0);
+  const vals=SEV.map(s=>f.filter(r=>r.sv===s.k).reduce((a,r)=>a+r.st,0));
+  const R=70,C=2*Math.PI*R;let off=0,arcs='';
+  vals.forEach((v,i)=>{const L=tot?v/tot*C:0;
+    arcs+=`<circle r="${R}" cx="100" cy="100" fill="none" style="stroke:${SEV[i].c}" stroke-width="26" stroke-dasharray="${Math.max(0,L-2)} ${C-Math.max(0,L-2)}" stroke-dashoffset="${-off}" transform="rotate(-90 100 100)"/>`;off+=L});
+  $('donut').innerHTML=`<svg viewBox="0 0 200 200" role="img" aria-label="توزيع الراكد حسب الشدة"><circle r="${R}" cx="100" cy="100" fill="none" style="stroke:var(--tint)" stroke-width="26"/>${arcs}
+    <text x="100" y="104" text-anchor="middle" style="fill:var(--text)" font-size="30" font-family="Reem Kufi,sans-serif" font-weight="700">${fmt(tot)}</text>
+    <text x="100" y="126" text-anchor="middle" style="fill:var(--mute)" font-size="12" font-family="IBM Plex Sans Arabic,sans-serif">وحدة</text></svg>`;
+  $('sev').innerHTML=SEV.map((s,i)=>`<div style="--c:${s.c}"><span>${s.n}<small>${s.d}</small></span><b class="num">${tot?Math.round(vals[i]/tot*100):0}%</b></div>`).join('');
+}
+
+function skus(){
+  const m=new Map();
+  filt().forEach(r=>{const o=m.get(r.c)||{c:r.c,n:r.n,u:0,br:0,ns:0};o.u+=r.st;o.br++;if(r.sv===0)o.ns+=r.st;m.set(r.c,o)});
+  const a=[...m.values()].sort((x,y)=>y.u-x.u).slice(0,8),mx=a[0]?a[0].u:1;
+  $('skuSub').textContent=sel?'أعلى الأصناف في '+short(sel):'إجمالي الوحدات الراكدة لكل صنف في كل الفروع';
+  $('skus').innerHTML=a.map(o=>`<div class="r" style="grid-template-columns:minmax(0,1.5fr) 1fr 48px" data-tip="${o.n}|${o.u} وحدة في ${o.br} فرع|بلا مبيعات: ${o.ns} وحدة">
+    <span class="nm" title="${o.n}">${o.n}</span><span class="tr"><span class="fl" style="width:${o.u/mx*100}%"><i style="width:${o.ns/o.u*100}%"></i></span></span><span class="vv num">${o.u}</span></div>`).join('');
+}
+
+function heat(){
+  const t=new Map();rows.forEach(r=>{const o=t.get(r.c)||{c:r.c,n:r.n,u:0};o.u+=r.st;t.set(r.c,o)});
+  const top=[...t.values()].sort((a,b)=>b.u-a.u).slice(0,12);
+  const bs=[...new Set(rows.map(r=>r.b))].sort((a,b)=>rows.filter(r=>r.b===b).reduce((s,r)=>s+r.st,0)-rows.filter(r=>r.b===a).reduce((s,r)=>s+r.st,0));
+  const g={};rows.forEach(r=>g[r.c+'|'+r.b]=r.st);
+  const tc=new Set(top.map(t=>t.c));const mx=Math.max(...rows.filter(r=>tc.has(r.c)).map(r=>r.st));
+  let h='<tr><th class="rl"></th>'+bs.map(b=>`<th>${short(b)}</th>`).join('')+'</tr>';
+  top.forEach(t=>{h+=`<tr><th class="rl" title="${t.n}">${t.n}</th>`+bs.map(b=>{const v=g[t.c+'|'+b];
+    if(!v)return '<td></td>';const a=.18+.82*Math.min(1,v/mx);
+    return `<td class="h" style="--a:${a.toFixed(2)};--tc:${a>.6?'var(--hmhi)':'var(--text)'}" data-tip="${t.n}|${short(b)}: ${v} وحدة راكدة">${v}</td>`}).join('')+'</tr>'});
+  $('heat').innerHTML=h;
+}
+
+const COLS=[['b','الفرع'],['n','الصنف'],['c','الرمز'],['a','المتاح'],['s','مباع 90 يوم'],['st','الراكد'],['cv','التغطية (يوم)']];
+function table(){
+  const q=query.trim().toLowerCase();
+  let f=filt().filter(r=>!q||(r.n+' '+r.c+' '+r.b).toLowerCase().includes(q));
+  f=[...f].sort((x,y)=>{let a=x[sortK],b=y[sortK];if(a===null)a=1e9;if(b===null)b=1e9;
+    return typeof a==='string'?a.localeCompare(b,'ar')*sortD:(a-b)*sortD});
+  $('tbl').innerHTML='<thead><tr>'+COLS.map(([k,l])=>`<th data-k="${k}">${l}${sortK===k?(sortD<0?' ▼':' ▲'):''}</th>`).join('')+'<th>الحالة</th></tr></thead><tbody>'+
+   f.map(r=>{const s=SEV[r.sv];return `<tr><td>${short(r.b)}</td><td class="it">${r.n}</td><td class="num">${r.c}</td><td class="num">${r.a}</td><td class="num">${r.s}</td><td class="num"><b>${r.st}</b></td><td class="num">${r.cv===null?'—':fmt(Math.round(r.cv))}</td><td><span class="pill" style="--c:${s.c}">${s.n}</span></td></tr>`}).join('')+'</tbody>';
+  $('cnt').textContent=`${fmt(f.length)} صف · ${fmt(f.reduce((s,r)=>s+r.st,0))} وحدة راكدة`;
+  $('tbl').querySelectorAll('th[data-k]').forEach(th=>th.onclick=()=>{const k=th.dataset.k;if(sortK===k)sortD*=-1;else{sortK=k;sortD=-1}table()});
+}
+
+function update(){
+  $('chip').hidden=!sel;if(sel)$('chipTxt').textContent='الفرع: '+short(sel);
+  strip();branches();donut();skus();table();
+}
+
+/* tooltip */
+const tip=$('tip');
+document.addEventListener('mousemove',e=>{
+  const t=e.target.closest&&e.target.closest('[data-tip]');
+  if(!t){tip.style.opacity=0;return}
+  const p=t.dataset.tip.split('|');
+  tip.innerHTML=`<b>${p[0]}</b>`+p.slice(1).map(x=>`<div style="color:var(--mute)">${x}</div>`).join('');
+  tip.style.opacity=1;
+  const w=tip.offsetWidth;let x=e.clientX-w-14;if(x<8)x=e.clientX+14;
+  tip.style.left=x+'px';tip.style.top=Math.min(e.clientY+14,innerHeight-tip.offsetHeight-8)+'px';
+});
+
+document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{
+  metric=b.dataset.m;document.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed',x===b));branches()});
+$('chipX').onclick=()=>{sel=null;update()};
+$('q').oninput=e=>{query=e.target.value;table()};
+
+const tot=rows.reduce((s,r)=>s+r.st,0);
+$('heroLines').textContent=fmt(rows.length);$('heroNo').textContent=fmt(rows.filter(r=>r.sv===0).length);
+heat();update();countUp($('heroNum'),tot);
+</script>
+
+
+<script>
+const P=[["03003095","صنية ريزن زخارف بارزة k-140","فرع الاحساء","معرض المدينة",4,0,3,2],["03003099","بنبنيرة 2024 ابيض k-5","فرع الاحساء","فرع خميس مشيط",6,0,0,2],["03003116","بنبنيرة 2024 اسود k-1","فرع الاحساء","فرع غرناطة",4,1,7,0],["03003319","صنية مستطيلة حجر بركانى k-227","فرع الاحساء","فرع خميس مشيط",4,0,0,3],["03003320","صنية زجاج دائرى بنى K-146","فرع الاحساء","فرع تبوك",4,0,0,1],["03003348","صحن رخام بقاعدة جلد بنى فاتح k-199","فرع الاحساء","فرع السويدي",5,0,3,1],["03003352","صنية سيراميك k-185-s اخضر صغير","فرع الاحساء","فرع السويدي",3,0,0,4],["03003355","صنية زجاج ديكور دوائر K-142","فرع الاحساء","فرع الملقا",3,0,5,4],["03003433","صينيه ريزن اسكاي دائري s-179","فرع الاحساء","فرع السويدي",5,0,4,17],["03003438","صينيه ريزن اسكاي ورده على القاعده s-184","فرع الاحساء","معرض المدينة",4,0,3,19],["03003442","صينيه زجاج دائري رمادي S-9","فرع الاحساء","فرع جده",3,0,3,12],["03003512","صنية سيراميك k-185-l اخضر كبير","فرع الاحساء","فرع السويدي",5,0,4,5],["03003513","صنية سيراميك k-186-l زخرفة ديور كبير","فرع الاحساء","فرع الدمام",5,0,4,9],["03003523","صينيه سراميك مرتفعه بيضاوي سكري S-33","فرع الاحساء","فرع جده",6,0,0,13],["03003524","صينيه سراميك مرتفعه بيضاوي بخطوط S-35","فرع الاحساء","فرع الملقا",4,0,7,24],["03003532","صينيه خشب مربع S-130","فرع الاحساء","فرع غرناطة",6,0,2,15],["03003606","صينيه خشب مضغوط بيج مسطح كبير s-168","فرع الاحساء","فرع خميس مشيط",3,0,7,7],["03003608","صينيه ريزن راس غزال S-132","فرع الاحساء","فرع وادى لبن",3,0,1,13],["03003611","صينيه زجاج مسننه الحواف S-61","فرع الاحساء","فرع خميس مشيط",5,0,5,13],["03003615","صينيه ملامين بيج بيضاوي كبير s-3","فرع الاحساء","فرع الملقا",3,0,6,12],["03003628","سكشن هدايا جلد ثلاث دوائر S-46","فرع الاحساء","فرع جده",4,0,7,11],["03003638","صينيه زجاج شفاف S-164 (معمول)","فرع الاحساء","فرع غرناطة",3,0,9,18],["03003646","بوكس سكشن هدايا اسود بدرج S-152","فرع الاحساء","فرع مكة",6,0,5,10],["03003648","فازه سكشن هدايا S-111","فرع الاحساء","معرض الطائف",3,0,4,6],["03003650","صينيه زجاج دائري ذهبي S-10","فرع الاحساء","معرض سلمان الفارسى",4,0,3,17],["03003324","صنية سيراميك كورة رخامى بنى K-178-2","فرع الخرج","فرع الدمام",5,0,1,2],["03003352","صنية سيراميك k-185-s اخضر صغير","فرع الخرج","فرع السويدي",3,0,0,4],["03003355","صنية زجاج ديكور دوائر K-142","فرع الخرج","فرع الملقا",4,0,5,4],["03003428","صينيه استيل بيج ديكور كورات s-72","فرع الخرج","فرع القصيم",3,0,7,14],["03003433","صينيه ريزن اسكاي دائري s-179","فرع الخرج","فرع السويدي",3,0,4,17],["03003438","صينيه ريزن اسكاي ورده على القاعده s-184","فرع الخرج","معرض المدينة",6,0,3,19],["03003512","صنية سيراميك k-185-l اخضر كبير","فرع الخرج","فرع السويدي",4,0,4,5],["03003512","صنية سيراميك k-185-l اخضر كبير","فرع الخرج","فرع الملقا",3,0,5,5],["03003523","صينيه سراميك مرتفعه بيضاوي سكري S-33","فرع الخرج","فرع جده",6,0,0,13],["03003524","صينيه سراميك مرتفعه بيضاوي بخطوط S-35","فرع الخرج","فرع الملقا",3,0,7,24],["03003606","صينيه خشب مضغوط بيج مسطح كبير s-168","فرع الخرج","فرع خميس مشيط",4,0,7,7],["03003608","صينيه ريزن راس غزال S-132","فرع الخرج","فرع وادى لبن",4,0,1,13],["03003615","صينيه ملامين بيج بيضاوي كبير s-3","فرع الخرج","فرع الملقا",4,0,6,12],["03003628","سكشن هدايا جلد ثلاث دوائر S-46","فرع الخرج","فرع جده",3,0,7,11],["03003629","سكشن هدايا جلد ثلاث علب S-50","فرع الخرج","فرع مكة",3,0,0,8],["03003637","صينيه زجاج شفاف S-164 (موالح)","فرع الخرج","فرع الملقا",5,0,14,23],["03003638","صينيه زجاج شفاف S-164 (معمول)","فرع الخرج","فرع غرناطة",7,0,9,18],["03003646","بوكس سكشن هدايا اسود بدرج S-152","فرع الخرج","فرع مكة",3,0,5,10],["03003648","فازه سكشن هدايا S-111","فرع الخرج","معرض الطائف",3,0,4,6],["03003674","صحن زجاج دائرى كبير k-109-L","فرع الخرج","فرع غرناطة",5,1,10,0],["03003678","صنية دائرى زجاج رمادى غامق k-43","فرع الخرج","فرع السويدي",3,0,0,12],["03003084","صنية سيراميك لويس فيتو كبير اسود Q-55","فرع الدمام","فرع جده",3,0,0,1],["03003095","صنية ريزن زخارف بارزة k-140","فرع الدمام","معرض المدينة",4,0,3,2],["03003319","صنية مستطيلة حجر بركانى k-227","فرع الدمام","فرع خميس مشيط",3,0,0,3],["03003350","صنية زجاج ديكور كأس K-34","فرع الدمام","فرع خميس مشيط",3,0,2,3],["03003355","صنية زجاج ديكور دوائر K-142","فرع الدمام","فرع الملقا",3,0,5,4],["03003421","صينية ريزن عيون اسود F-423B","فرع الدمام","فرع الخرج",4,0,1,1],["03003512","صنية سيراميك k-185-l اخضر كبير","فرع الدمام","فرع السويدي",4,0,4,5],["03003600","صينيه زجاج عميقة وسط S-84 (مكشوف)","فرع الدمام","فرع الملقا",3,0,3,5],["03003606","صينيه خشب مضغوط بيج مسطح كبير s-168","فرع الدمام","فرع خميس مشيط",3,0,7,7],["03003638","صينيه زجاج شفاف S-164 (معمول)","فرع الدمام","فرع غرناطة",3,0,9,18],["03003663","صنية ريزن صدف مموج Q-74","فرع الدمام","فرع الروضة",3,0,0,2],["03003116","بنبنيرة 2024 اسود k-1","فرع الروضة","فرع غرناطة",4,1,7,0],["03003160","بنبنيرة 2024 فضى k-4","فرع الروضة","فرع وادى لبن",4,0,2,1],["03003319","صنية مستطيلة حجر بركانى k-227","فرع الروضة","فرع خميس مشيط",7,0,0,3],["03003324","صنية سيراميك كورة رخامى بنى K-178-2","فرع الروضة","فرع الدمام",3,0,1,2],["03003348","صحن رخام بقاعدة جلد بنى فاتح k-199","فرع الروضة","فرع السويدي",4,0,3,1],["03003352","صنية سيراميك k-185-s اخضر صغير","فرع الروضة","فرع السويدي",5,0,0,4],["03003355","صنية زجاج ديكور دوائر K-142","فرع الروضة","فرع تبوك",7,0,4,4],["03003355","صنية زجاج ديكور دوائر K-142","فرع الروضة","فرع الملقا",6,0,5,4],["03003438","صينيه ريزن اسكاي ورده على القاعده s-184","فرع الروضة","معرض المدينة",4,0,3,19],["03003606","صينيه خشب مضغوط بيج مسطح كبير s-168","فرع الروضة","فرع خميس مشيط",3,0,7,7],["03003637","صينيه زجاج شفاف S-164 (موالح)","فرع الروضة","فرع الملقا",5,0,14,23],["03003637","صينيه زجاج شفاف S-164 (موالح)","فرع الروضة","فرع غرناطة",4,0,10,18],["03003638","صينيه زجاج شفاف S-164 (معمول)","فرع الروضة","فرع غرناطة",10,0,9,18],["03003646","بوكس سكشن هدايا اسود بدرج S-152","فرع الروضة","فرع مكة",6,0,5,10],["03003649","صينيه مستطيله 3 اقسام S-108","فرع الروضة","فرع تبوك",5,0,2,13],["03003674","صحن زجاج دائرى كبير k-109-L","فرع الروضة","فرع غرناطة",5,1,10,0],["03003092","صنية ريزن دائرى مموج منقط k-136","فرع السويدي","فرع غرناطة",3,1,0,0],["03003324","صنية سيراميك كورة رخامى بنى K-178-2","فرع السويدي","فرع الدمام",5,0,1,2],["03003324","صنية سيراميك كورة رخامى بنى K-178-2","فرع السويدي","فرع تبوك",3,0,3,2],["03003355","صنية زجاج ديكور دوائر K-142","فرع السويدي","فرع الملقا",4,0,5,4],["03003426","صينيه ديكور كسر s-1","فرع السويدي","فرع خميس مشيط",3,0,3,4],["03003442","صينيه زجاج دائري رمادي S-9","فرع السويدي","فرع جده",3,0,3,12],["03003600","صينيه زجاج عميقة وسط S-84 (مكشوف)","فرع السويدي","فرع الملقا",3,0,3,5],["03003606","صينيه خشب مضغوط بيج مسطح كبير s-168","فرع السويدي","فرع خميس مشيط",6,0,7,7],["03003606","صينيه خشب مضغوط بيج مسطح كبير s-168","فرع السويدي","فرع القصيم",3,0,3,5],["03003615","صينيه ملامين بيج بيضاوي كبير s-3","فرع السويدي","فرع الملقا",4,0,6,12],["03003628","سكشن هدايا جلد ثلاث دوائر S-46","فرع السويدي","فرع جده",5,0,7,11],["03003638","صينيه زجاج شفاف S-164 (معمول)","فرع السويدي","فرع غرناطة",4,0,9,18],["03003646","بوكس سكشن هدايا اسود بدرج S-152","فرع السويدي","فرع مكة",8,0,5,10],["03003649","صينيه مستطيله 3 اقسام S-108","فرع السويدي","فرع تبوك",6,0,2,13],["03003674","صحن زجاج دائرى كبير k-109-L","فرع السويدي","فرع الدمام",6,1,4,0],["03003433","صينيه ريزن اسكاي دائري s-179","فرع القصيم","فرع السويدي",4,0,4,17],["03003434","صينيه ريزن اسكاي مسطحه ورود s-180","فرع القصيم","فرع تبوك",4,0,7,30],["03003438","صينيه ريزن اسكاي ورده على القاعده s-184","فرع القصيم","معرض المدينة",7,0,3,19],["03003512","صنية سيراميك k-185-l اخضر كبير","فرع القصيم","فرع السويدي",3,0,4,5],["03003633","صينيه زجاج عميقة سكري كبير S-83","فرع القصيم","معرض الطائف",3,0,2,13],["03003638","صينيه زجاج شفاف S-164 (معمول)","فرع القصيم","فرع غرناطة",4,0,9,18],["03003646","بوكس سكشن هدايا اسود بدرج S-152","فرع القصيم","فرع مكة",7,0,5,10],["03003648","فازه سكشن هدايا S-111","فرع القصيم","معرض الطائف",5,0,4,6],["03003678","صنية دائرى زجاج رمادى غامق k-43","فرع القصيم","فرع السويدي",3,0,3,1],["03003096","بنبنيرة 2024 استيل مزدوجة k-7","فرع الملقا","فرع الخرج",7,0,0,1],["03003099","بنبنيرة 2024 ابيض k-5","فرع الملقا","فرع خميس مشيط",6,0,0,2],["03003160","بنبنيرة 2024 فضى k-4","فرع الملقا","فرع وادى لبن",4,0,2,1],["03003319","صنية مستطيلة حجر بركانى k-227","فرع الملقا","فرع خميس مشيط",4,0,0,3],["03003348","صحن رخام بقاعدة جلد بنى فاتح k-199","فرع الملقا","فرع القصيم",5,0,0,1],["03003348","صحن رخام بقاعدة جلد بنى فاتح k-199","فرع الملقا","فرع السويدي",3,0,3,1],["03003630","سكشن هدايا جلد استاند مفرغ اسود S-49","فرع الملقا","معرض الطائف",4,0,7,16],["03003635","صينيه زجاج مستطيله ديكور غزال S-59","فرع الملقا","معرض سلمان الفارسى",4,0,5,21],["03003638","صينيه زجاج شفاف S-164 (معمول)","فرع الملقا","فرع غرناطة",7,0,9,18],["03003646","بوكس سكشن هدايا اسود بدرج S-152","فرع الملقا","فرع مكة",4,0,5,10],["03003093","صنية ريزن فازة k-138","فرع تبوك","فرع الروضة",3,0,0,1],["03003095","صنية ريزن زخارف بارزة k-140","فرع تبوك","معرض المدينة",4,0,3,2],["03003443","صنية زجاج كبير فضى K-128","فرع تبوك","فرع الملقا",3,0,2,14],["03003648","فازه سكشن هدايا S-111","فرع تبوك","معرض الطائف",3,0,4,6],["03003679","صنية سيراميك كحلى مع ابيض K-150","فرع تبوك","فرع القصيم",3,0,0,3],["03003093","صنية ريزن فازة k-138","فرع جده","فرع الروضة",5,0,0,1],["03003097","بنبنيرة 2024 عسلى k-3","فرع جده","فرع غرناطة",5,1,6,0],["03003116","بنبنيرة 2024 اسود k-1","فرع جده","فرع الدمام",6,1,0,0],["03003287","صنية سيراميك k-183-s زيتى صغير","فرع جده","فرع مكة",3,0,0,2],["03003428","صينيه استيل بيج ديكور كورات s-72","فرع جده","فرع القصيم",7,0,7,14],["03003433","صينيه ريزن اسكاي دائري s-179","فرع جده","فرع السويدي",4,0,4,17],["03003525","صينيه ريزن اسكاي زخارف ذهبيه s-186","فرع جده","فرع الدمام",3,0,7,12],["03003533","صينيه ملامين بيج بيضاوي صغير s-2","فرع جده","فرع الدمام",5,0,0,12],["03003533","صينيه ملامين بيج بيضاوي صغير s-2","فرع جده","فرع وادى لبن",3,0,0,11],["03003606","صينيه خشب مضغوط بيج مسطح كبير s-168","فرع جده","فرع خميس مشيط",7,0,7,7],["03003606","صينيه خشب مضغوط بيج مسطح كبير s-168","فرع جده","فرع القصيم",6,0,3,5],["03003606","صينيه خشب مضغوط بيج مسطح كبير s-168","فرع جده","معرض الطائف",5,0,4,5],["03003638","صينيه زجاج شفاف S-164 (معمول)","فرع جده","فرع غرناطة",8,0,9,18],["03003650","صينيه زجاج دائري ذهبي S-10","فرع جده","معرض سلمان الفارسى",4,0,3,17],["03003078","صنية ريزن بحزام k-137","فرع حائل","فرع القصيم",3,0,0,1],["03003095","صنية ريزن زخارف بارزة k-140","فرع حائل","معرض المدينة",3,0,3,2],["03003116","بنبنيرة 2024 اسود k-1","فرع حائل","فرع غرناطة",3,1,7,0],["03003288","صنية سيراميك k-184-s عنابى صغير","فرع حائل","فرع جده",3,0,3,2],["03003293","صنية رخام ديكور غزال k-127","فرع حائل","فرع تبوك",3,0,2,3],["03003319","صنية مستطيلة حجر بركانى k-227","فرع حائل","فرع خميس مشيط",4,0,0,3],["03003324","صنية سيراميك كورة رخامى بنى K-178-2","فرع حائل","فرع الدمام",4,0,1,2],["03003352","صنية سيراميك k-185-s اخضر صغير","فرع حائل","فرع السويدي",3,0,0,4],["03003355","صنية زجاج ديكور دوائر K-142","فرع حائل","فرع الملقا",4,0,5,4],["03003442","صينيه زجاج دائري رمادي S-9","فرع حائل","فرع جده",4,0,3,12],["03003512","صنية سيراميك k-185-l اخضر كبير","فرع حائل","فرع السويدي",5,0,4,5],["03003525","صينيه ريزن اسكاي زخارف ذهبيه s-186","فرع حائل","فرع الدمام",6,0,7,12],["03003525","صينيه ريزن اسكاي زخارف ذهبيه s-186","فرع حائل","فرع السويدي",3,0,6,9],["03003606","صينيه خشب مضغوط بيج مسطح كبير s-168","فرع حائل","فرع خميس مشيط",5,0,7,7],["03003615","صينيه ملامين بيج بيضاوي كبير s-3","فرع حائل","فرع الملقا",7,0,6,12],["03003628","سكشن هدايا جلد ثلاث دوائر S-46","فرع حائل","فرع جده",4,0,7,11],["03003629","سكشن هدايا جلد ثلاث علب S-50","فرع حائل","فرع مكة",5,0,0,8],["03003637","صينيه زجاج شفاف S-164 (موالح)","فرع حائل","فرع الملقا",5,0,14,23],["03003637","صينيه زجاج شفاف S-164 (موالح)","فرع حائل","فرع غرناطة",4,0,10,18],["03003646","بوكس سكشن هدايا اسود بدرج S-152","فرع حائل","فرع مكة",6,0,5,10],["03003648","فازه سكشن هدايا S-111","فرع حائل","معرض الطائف",3,0,4,6],["03003678","صنية دائرى زجاج رمادى غامق k-43","فرع حائل","فرع السويدي",5,0,0,12],["03003078","صنية ريزن بحزام k-137","فرع خميس مشيط","فرع القصيم",3,0,0,1],["03003638","صينيه زجاج شفاف S-164 (معمول)","فرع خميس مشيط","فرع غرناطة",3,0,9,18],["03002938","صوانى خشب بقاعدة حديد F-211","فرع غرناطة","فرع الملقا",3,0,5,4],["03002996","صنية MK-99","فرع غرناطة","فرع الدمام",3,0,2,1],["03003095","صنية ريزن زخارف بارزة k-140","فرع غرناطة","معرض المدينة",3,0,3,2],["03003096","بنبنيرة 2024 استيل مزدوجة k-7","فرع غرناطة","فرع الخرج",8,0,0,1],["03003099","بنبنيرة 2024 ابيض k-5","فرع غرناطة","فرع خميس مشيط",8,0,0,2],["03003160","بنبنيرة 2024 فضى k-4","فرع غرناطة","فرع وادى لبن",4,0,2,1],["03003288","صنية سيراميك k-184-s عنابى صغير","فرع غرناطة","فرع جده",5,0,3,2],["03003319","صنية مستطيلة حجر بركانى k-227","فرع غرناطة","فرع خميس مشيط",10,0,0,3],["03003320","صنية زجاج دائرى بنى K-146","فرع غرناطة","فرع تبوك",3,0,0,1],["03003348","صحن رخام بقاعدة جلد بنى فاتح k-199","فرع غرناطة","فرع السويدي",4,0,3,1],["03003350","صنية زجاج ديكور كأس K-34","فرع غرناطة","فرع خميس مشيط",4,0,2,3],["03003350","صنية زجاج ديكور كأس K-34","فرع غرناطة","فرع الملقا",3,0,1,2],["03003354","صنية زجاج صدفة مموج رمادى K-144","فرع غرناطة","فرع السويدي",3,0,0,1],["03003355","صنية زجاج ديكور دوائر K-142","فرع غرناطة","فرع تبوك",7,0,4,4],["03003355","صنية زجاج ديكور دوائر K-142","فرع غرناطة","فرع الملقا",6,0,5,4],["03003426","صينيه ديكور كسر s-1","فرع غرناطة","فرع خميس مشيط",5,0,3,4],["03003433","صينيه ريزن اسكاي دائري s-179","فرع غرناطة","فرع السويدي",4,0,4,17],["03003437","صينيه ريزن اسكاي بقاعدة ديكور جانبي s-183","فرع غرناطة","فرع جده",5,0,3,12],["03003438","صينيه ريزن اسكاي ورده على القاعده s-184","فرع غرناطة","معرض المدينة",4,0,3,19],["03003512","صنية سيراميك k-185-l اخضر كبير","فرع غرناطة","فرع السويدي",6,0,4,5],["03003512","صنية سيراميك k-185-l اخضر كبير","فرع غرناطة","فرع الروضة",3,0,2,4],["03003589","صينيه استيل سكري S-67-M","فرع غرناطة","فرع الدمام",4,0,0,5],["03003606","صينيه خشب مضغوط بيج مسطح كبير s-168","فرع غرناطة","فرع خميس مشيط",4,0,7,7],["03003615","صينيه ملامين بيج بيضاوي كبير s-3","فرع غرناطة","فرع الملقا",3,0,6,12],["03003646","بوكس سكشن هدايا اسود بدرج S-152","فرع غرناطة","فرع مكة",6,0,5,10],["03003648","فازه سكشن هدايا S-111","فرع غرناطة","معرض الطائف",3,0,4,6],["03003093","صنية ريزن فازة k-138","فرع مكة","فرع الروضة",4,0,0,1],["03003095","صنية ريزن زخارف بارزة k-140","فرع مكة","معرض المدينة",4,0,3,2],["03003355","صنية زجاج ديكور دوائر K-142","فرع مكة","فرع الملقا",5,0,5,4],["03003426","صينيه ديكور كسر s-1","فرع مكة","فرع خميس مشيط",5,0,3,4],["03003433","صينيه ريزن اسكاي دائري s-179","فرع مكة","فرع السويدي",9,0,4,17],["03003433","صينيه ريزن اسكاي دائري s-179","فرع مكة","معرض المدينة",3,0,5,15],["03003434","صينيه ريزن اسكاي مسطحه ورود s-180","فرع مكة","فرع غرناطة",7,0,0,30],["03003439","صينيه ريزن اسكاي بقاعده منخفضة s-185","فرع مكة","معرض المدينة",6,0,5,20],["03003512","صنية سيراميك k-185-l اخضر كبير","فرع مكة","فرع السويدي",3,0,4,5],["03003523","صينيه سراميك مرتفعه بيضاوي سكري S-33","فرع مكة","فرع جده",4,0,0,13],["03003524","صينيه سراميك مرتفعه بيضاوي بخطوط S-35","فرع مكة","فرع الملقا",4,0,7,24],["03003534","صينيه خشب بيضاوي S-128","فرع مكة","فرع الملقا",5,0,5,28],["03003606","صينيه خشب مضغوط بيج مسطح كبير s-168","فرع مكة","فرع القصيم",4,0,3,5],["03003606","صينيه خشب مضغوط بيج مسطح كبير s-168","فرع مكة","فرع خميس مشيط",4,0,7,7],["03003611","صينيه زجاج مسننه الحواف S-61","فرع مكة","فرع خميس مشيط",4,0,5,13],["03003612","صينيه زجاج بقاعده مثلث S-4","فرع مكة","فرع الملقا",4,0,0,20],["03003613","صينيه رمضان بقاعده ديكور S-52","فرع مكة","معرض الطائف",10,0,0,19],["03003614","صينيه اكلرك بقاعده جلد بني S-53","فرع مكة","معرض المدينة",6,0,4,12],["03003636","صينيه زجاج شفاف S-164 (مكشوف 190)","فرع مكة","فرع غرناطة",6,0,7,32],["03003637","صينيه زجاج شفاف S-164 (موالح)","فرع مكة","فرع الملقا",5,0,14,23],["03003637","صينيه زجاج شفاف S-164 (موالح)","فرع مكة","فرع غرناطة",4,0,10,18],["03003638","صينيه زجاج شفاف S-164 (معمول)","فرع مكة","فرع غرناطة",9,0,9,18],["03003638","صينيه زجاج شفاف S-164 (معمول)","فرع مكة","معرض الطائف",3,0,12,15],["03003650","صينيه زجاج دائري ذهبي S-10","فرع مكة","معرض سلمان الفارسى",4,0,3,17],["03003678","صنية دائرى زجاج رمادى غامق k-43","فرع مكة","فرع السويدي",5,0,0,12],["03002195","صنية خزف مزخرف اسود كبير c-223","فرع وادى لبن","فرع غرناطة",4,1,0,0],["03002994","صنية حروف عربية MK-72B","فرع وادى لبن","فرع غرناطة",3,1,0,0],["03003096","بنبنيرة 2024 استيل مزدوجة k-7","فرع وادى لبن","فرع الخرج",7,0,0,1],["03003099","بنبنيرة 2024 ابيض k-5","فرع وادى لبن","فرع خميس مشيط",5,0,0,2],["03003116","بنبنيرة 2024 اسود k-1","فرع وادى لبن","فرع غرناطة",3,1,7,0],["03003301","صنية زجاج فازة استيل k-96","فرع وادى لبن","فرع جده",3,0,1,1],["03003348","صحن رخام بقاعدة جلد بنى فاتح k-199","فرع وادى لبن","فرع السويدي",3,0,3,1],["03003350","صنية زجاج ديكور كأس K-34","فرع وادى لبن","فرع خميس مشيط",4,0,2,3],["03003352","صنية سيراميك k-185-s اخضر صغير","فرع وادى لبن","فرع السويدي",5,0,0,4],["03003355","صنية زجاج ديكور دوائر K-142","فرع وادى لبن","فرع الملقا",5,0,5,4],["03003426","صينيه ديكور كسر s-1","فرع وادى لبن","فرع خميس مشيط",3,0,3,4],["03003433","صينيه ريزن اسكاي دائري s-179","فرع وادى لبن","فرع السويدي",4,0,4,17],["03003437","صينيه ريزن اسكاي بقاعدة ديكور جانبي s-183","فرع وادى لبن","فرع جده",3,0,3,12],["03003438","صينيه ريزن اسكاي ورده على القاعده s-184","فرع وادى لبن","معرض المدينة",3,0,3,19],["03003512","صنية سيراميك k-185-l اخضر كبير","فرع وادى لبن","فرع السويدي",5,0,4,5],["03003525","صينيه ريزن اسكاي زخارف ذهبيه s-186","فرع وادى لبن","فرع الدمام",8,0,7,12],["03003525","صينيه ريزن اسكاي زخارف ذهبيه s-186","فرع وادى لبن","فرع السويدي",3,0,6,9],["03003611","صينيه زجاج مسننه الحواف S-61","فرع وادى لبن","فرع خميس مشيط",3,0,5,13],["03003630","سكشن هدايا جلد استاند مفرغ اسود S-49","فرع وادى لبن","معرض الطائف",3,0,7,16],["03003637","صينيه زجاج شفاف S-164 (موالح)","فرع وادى لبن","فرع الملقا",3,0,14,23],["03003649","صينيه مستطيله 3 اقسام S-108","فرع وادى لبن","فرع تبوك",4,0,2,13],["03003674","صحن زجاج دائرى كبير k-109-L","فرع وادى لبن","فرع غرناطة",5,1,10,0],["03003678","صنية دائرى زجاج رمادى غامق k-43","فرع وادى لبن","فرع السويدي",3,0,0,12],["03003085","صنية سيراميك لويس فيتو صغير ابيض Q-54","معرض الطائف","فرع جده",3,0,1,3],["03003116","بنبنيرة 2024 اسود k-1","معرض الطائف","فرع غرناطة",3,1,7,0],["03003426","صينيه ديكور كسر s-1","معرض الطائف","فرع خميس مشيط",4,0,3,4],["03003512","صنية سيراميك k-185-l اخضر كبير","معرض الطائف","فرع السويدي",3,0,4,5],["03003524","صينيه سراميك مرتفعه بيضاوي بخطوط S-35","معرض الطائف","فرع الملقا",3,0,7,24],["03003525","صينيه ريزن اسكاي زخارف ذهبيه s-186","معرض الطائف","فرع الدمام",6,0,7,12],["03003525","صينيه ريزن اسكاي زخارف ذهبيه s-186","معرض الطائف","فرع السويدي",3,0,6,9],["03003535","صينيه خشب مثلث S-129","معرض الطائف","فرع غرناطة",4,0,0,31],["03003590","صينيه استيل سكري S-67-M (2)","معرض الطائف","فرع جده",4,0,0,1],["03003605","صينيه زجاج دائري مموج S-58","معرض الطائف","فرع غرناطة",9,0,0,5],["03003678","صنية دائرى زجاج رمادى غامق k-43","معرض الطائف","فرع السويدي",3,0,0,12],["03003078","صنية ريزن بحزام k-137","معرض المدينة","فرع القصيم",4,0,0,1],["03003083","صنية سيراميك لويس فيتو صغير اسود Q-56","معرض المدينة","فرع القصيم",4,0,1,1],["03003084","صنية سيراميك لويس فيتو كبير اسود Q-55","معرض المدينة","فرع جده",3,0,0,1],["03003093","صنية ريزن فازة k-138","معرض المدينة","فرع الروضة",4,0,0,1],["03003116","بنبنيرة 2024 اسود k-1","معرض المدينة","فرع غرناطة",5,1,7,0],["03003315","صحن رخام بقاعدة جلد سكرى k-200","معرض المدينة","فرع غرناطة",3,1,0,0],["03003319","صنية مستطيلة حجر بركانى k-227","معرض المدينة","فرع خميس مشيط",3,0,0,3],["03003348","صحن رخام بقاعدة جلد بنى فاتح k-199","معرض المدينة","فرع السويدي",3,0,3,1],["03003350","صنية زجاج ديكور كأس K-34","معرض المدينة","فرع خميس مشيط",3,0,2,3],["03003352","صنية سيراميك k-185-s اخضر صغير","معرض المدينة","فرع السويدي",3,0,0,4],["03003411","Q-71 صنية ريزن مدورة بيضاء","معرض المدينة","فرع غرناطة",3,1,0,0],["03003426","صينيه ديكور كسر s-1","معرض المدينة","فرع خميس مشيط",4,0,3,4],["03003426","صينيه ديكور كسر s-1","معرض المدينة","فرع تبوك",3,0,1,3],["03003524","صينيه سراميك مرتفعه بيضاوي بخطوط S-35","معرض المدينة","فرع الملقا",3,0,7,24],["03003606","صينيه خشب مضغوط بيج مسطح كبير s-168","معرض المدينة","فرع خميس مشيط",5,0,7,7],["03003606","صينيه خشب مضغوط بيج مسطح كبير s-168","معرض المدينة","فرع القصيم",4,0,3,5],["03003606","صينيه خشب مضغوط بيج مسطح كبير s-168","معرض المدينة","معرض الطائف",3,0,4,5],["03003615","صينيه ملامين بيج بيضاوي كبير s-3","معرض المدينة","فرع تبوك",7,0,2,11],["03003615","صينيه ملامين بيج بيضاوي كبير s-3","معرض المدينة","فرع الملقا",5,0,6,12],["03003646","بوكس سكشن هدايا اسود بدرج S-152","معرض المدينة","فرع مكة",4,0,5,10],["03003648","فازه سكشن هدايا S-111","معرض المدينة","معرض الطائف",5,0,4,6],["03003648","فازه سكشن هدايا S-111","معرض المدينة","فرع خميس مشيط",3,0,3,4],["03003659","صينية زواجات استيل اسود وذهبى n-260","معرض المدينة","فرع جده",3,0,0,3],["03003661","صينيه قوس n-197","معرض المدينة","فرع غرناطة",3,0,2,3],["03003662","صينية زواجات سنبلة ذهبى f-123","معرض المدينة","فرع جده",3,0,0,3],["03002994","صنية حروف عربية MK-72B","معرض سلمان الفارسى","فرع غرناطة",3,1,0,0],["03003078","صنية ريزن بحزام k-137","معرض سلمان الفارسى","فرع القصيم",3,0,0,1],["03003096","بنبنيرة 2024 استيل مزدوجة k-7","معرض سلمان الفارسى","فرع الخرج",8,0,0,1],["03003099","بنبنيرة 2024 ابيض k-5","معرض سلمان الفارسى","فرع خميس مشيط",5,0,0,2],["03003104","فازة استيل ديكور جلد k-219","معرض سلمان الفارسى","فرع الخرج",3,0,0,1],["03003116","بنبنيرة 2024 اسود k-1","معرض سلمان الفارسى","فرع غرناطة",3,1,7,0],["03003160","بنبنيرة 2024 فضى k-4","معرض سلمان الفارسى","فرع وادى لبن",5,0,2,1],["03003313","صنية ريزين رخامى ديكور وردة K-180","معرض سلمان الفارسى","فرع غرناطة",5,1,0,0],["03003319","صنية مستطيلة حجر بركانى k-227","معرض سلمان الفارسى","فرع خميس مشيط",4,0,0,3],["03003324","صنية سيراميك كورة رخامى بنى K-178-2","معرض سلمان الفارسى","فرع الدمام",5,0,1,2],["03003355","صنية زجاج ديكور دوائر K-142","معرض سلمان الفارسى","فرع تبوك",5,0,4,4],["03003355","صنية زجاج ديكور دوائر K-142","معرض سلمان الفارسى","فرع الملقا",4,0,5,4],["03003437","صينيه ريزن اسكاي بقاعدة ديكور جانبي s-183","معرض سلمان الفارسى","فرع جده",4,0,3,12],["03003438","صينيه ريزن اسكاي ورده على القاعده s-184","معرض سلمان الفارسى","معرض المدينة",6,0,3,19],["03003606","صينيه خشب مضغوط بيج مسطح كبير s-168","معرض سلمان الفارسى","فرع القصيم",4,0,3,5],["03003606","صينيه خشب مضغوط بيج مسطح كبير s-168","معرض سلمان الفارسى","فرع خميس مشيط",3,0,7,7],["03003615","صينيه ملامين بيج بيضاوي كبير s-3","معرض سلمان الفارسى","فرع الملقا",7,0,6,12],["03003628","سكشن هدايا جلد ثلاث دوائر S-46","معرض سلمان الفارسى","فرع جده",3,0,7,11],["03003629","سكشن هدايا جلد ثلاث علب S-50","معرض سلمان الفارسى","فرع مكة",7,0,0,8],["03003637","صينيه زجاج شفاف S-164 (موالح)","معرض سلمان الفارسى","فرع الملقا",6,0,14,23],["03003637","صينيه زجاج شفاف S-164 (موالح)","معرض سلمان الفارسى","فرع غرناطة",4,0,10,18],["03003638","صينيه زجاج شفاف S-164 (معمول)","معرض سلمان الفارسى","فرع غرناطة",7,0,9,18],["03003646","بوكس سكشن هدايا اسود بدرج S-152","معرض سلمان الفارسى","فرع مكة",4,0,5,10],["03003648","فازه سكشن هدايا S-111","معرض سلمان الفارسى","معرض الطائف",5,0,4,6],["03003649","صينيه مستطيله 3 اقسام S-108","معرض سلمان الفارسى","فرع تبوك",6,0,2,13]];
+(function(){
+const PC=[['n','الصنف'],['c','الرمز الخطي'],['f','من'],['t','إلى'],['q','الكمية'],['ta','متاح عند المستلم'],['ts','مباع عنده 90 يوم']];
+let ps='q',pd=-1,pq='';
+let rowsP=[];window.minq=()=>Math.max(3,+(document.getElementById('fmin')||{}).value||3);const rebuildP=()=>{const m=minq();rowsP=P.filter(r=>r[4]>=m).map(r=>({c:r[0],n:r[1],f:r[2],t:r[3],q:r[4],kd:r[5],ta:r[6],ts:r[7]}))};rebuildP();
+const stagTot=()=>D.filter(r=>!sel||r[0]===sel).reduce((s,r)=>s+r[5],0);
+window.renderPlan=function(){rebuildP();
+  const f0=sel?rowsP.filter(r=>r.f===sel||r.t===sel):rowsP;
+  const qq=pq.trim().toLowerCase();
+  let f=f0.filter(r=>!qq||(r.n+' '+r.c+' '+r.f+' '+r.t).toLowerCase().includes(qq));
+  f=[...f].sort((x,y)=>{const a=x[ps],b=y[ps];return typeof a==='string'?a.localeCompare(b,'ar')*pd:(a-b)*pd});if(sel)f.sort((x,y)=>(x.f===sel?0:1)-(y.f===sel?0:1));
+  const sent=rowsP.filter(r=>!sel||r.f===sel).reduce((s,r)=>s+r.q,0),recv=rowsP.filter(r=>sel&&r.t===sel).reduce((s,r)=>s+r.q,0),tot=stagTot();
+  $('planK').innerHTML=sel?`<div class="k"><div class="t">يرسل</div><div class="n num">${fmt(sent)}</div><div class="s">${short(sel)}</div></div><div class="k"><div class="t">يستلم</div><div class="n num">${fmt(recv)}</div><div class="s">من فروع أخرى</div></div><div class="k"><div class="t">الراكد في الفرع</div><div class="n num">${fmt(tot)}</div><div class="s">${tot?Math.round(sent/tot*100):0}% سيتحرك</div></div><div class="k"><div class="t">أسطر الخطة</div><div class="n num">${f0.length}</div><div class="s">إرسال واستلام</div></div>`
+  :`<div class="k"><div class="t">وحدات ستتحرك</div><div class="n num">${fmt(sent)}</div><div class="s">من ${fmt(tot)} وحدة راكدة</div></div><div class="k"><div class="t">نسبة التحريك</div><div class="n num">${tot?Math.round(sent/tot*100):0}%</div><div class="s">المتبقي ${fmt(tot-sent)} وحدة</div></div><div class="k"><div class="t">أسطر الخطة</div><div class="n num">${rowsP.length}</div><div class="s">${new Set(rowsP.map(r=>r.c)).size} صنف</div></div><div class="k"><div class="t">فروع مرسلة / مستلمة</div><div class="n num">${new Set(rowsP.map(r=>r.f)).size} / ${new Set(rowsP.map(r=>r.t)).size}</div><div class="s">كل الفروع</div></div>`;
+  $('ptbl').innerHTML='<thead><tr>'+PC.map(([k,l])=>`<th data-k="${k}">${l}${ps===k?(pd<0?' ▼':' ▲'):''}</th>`).join('')+'<th>نوع التوزيع</th>'+(sel?'<th>الاتجاه</th>':'')+'</tr></thead><tbody>'+
+   f.map(r=>`<tr><td class="it">${r.n}</td><td class="num">${r.c}</td><td>${short(r.f)}</td><td>${short(r.t)}</td><td class="num"><b>${r.q}</b></td><td class="num">${r.ta}</td><td class="num">${r.ts}</td><td><span class="pill" style="--c:${r.kd?'var(--teal)':'var(--gold2)'}">${r.kd?'أعلى مبيعاً بالفئة':'أعلى مبيعاً للصنف'}</span></td>${sel?`<td><span class="pill" style="--c:${r.f===sel?'var(--bad)':'var(--good)'}">${r.f===sel?'إرسال':'استلام'}</span></td>`:''}</tr>`).join('')+'</tbody>';
+  $('pcnt').textContent=`${fmt(f.length)} سطر · ${fmt(f.reduce((s,r)=>s+r.q,0))} وحدة`;
+  $('ptbl').querySelectorAll('th[data-k]').forEach(th=>th.onclick=()=>{const k=th.dataset.k;if(ps===k)pd*=-1;else{ps=k;pd=-1}renderPlan()});
+};
+window.setPQ=v=>{pq=v;renderPlan()};$('pq').oninput=e=>setPQ(e.target.value);
+const _u=update;update=function(){_u();renderPlan()};
+renderPlan();
+})();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function(){
+const btn=document.getElementById('xbtn');
+const lab=()=>{btn.textContent=sel?'تصدير Excel — '+short(sel):'تصدير Excel — الراكد لكل الفروع'};
+const _u3=update;update=function(){_u3();lab()};lab();
+const H=['الفرع','الرمز الخطي','الصنف','المتاح','مباع 90 يوم','الراكد','التغطية (يوم)','الحالة','سيتحرك (من الخطة)','المتبقي بعد التحريك'];
+let mv={};const calcMv=()=>{mv={};const m=minq();P.forEach(r=>{if(r[4]<m)return;const k=r[2]+'|'+r[0];mv[k]=(mv[k]||0)+r[4]})};calcMv();
+const st=r=>r[4]===0?'بلا مبيعات':(r[6]>365?'أكثر من سنة':(r[6]>=180?'6 إلى 12 شهراً':'أقل من 6 شهور'));
+const mo=r=>mv[r[0]+'|'+r[1]]||0;
+const line=r=>[r[0],r[1],r[2],r[3],r[4],r[5],r[6]==null?'—':Math.round(r[6]),st(r),mo(r),r[5]-mo(r)];
+const sum=(rows,f)=>rows.reduce((s,r)=>s+f(r),0);
+const sheet=rows=>{const a=[H,...rows.map(line)];a.push(['الإجمالي','','',sum(rows,r=>r[3]),sum(rows,r=>r[4]),sum(rows,r=>r[5]),'','',sum(rows,mo),sum(rows,r=>r[5]-mo(r))]);
+  const ws=XLSX.utils.aoa_to_sheet(a);ws['!cols']=[{wch:22},{wch:14},{wch:44},{wch:9},{wch:12},{wch:9},{wch:13},{wch:16},{wch:18},{wch:18}];ws['!views']=[{rightToLeft:true}];return ws};
+const nm=(s,used)=>{let n=short(s).replace(/[\\\/?*\[\]:]/g,' ').slice(0,28)||'sheet',k=n,i=2;while(used.has(k))k=n.slice(0,26)+' '+i++;used.add(k);return k};
+function csv(rows,name){const a=[H,...rows.map(line)].map((r,j)=>r.map((x,i)=>i===1&&j>0?'="'+x+'"':'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n');
+  saveFile(name+'.csv',['\ufeff'+a].join(''),'text/csv;charset=utf-8')}
+btn.onclick=()=>{calcMv();const qx=query.trim().toLowerCase();
+  const rows=D.filter(r=>(!sel||r[0]===sel)&&(!qx||(r[0]+' '+r[1]+' '+r[2]).toLowerCase().includes(qx))).slice().sort((a,b)=>a[0]===b[0]?b[5]-a[5]:a[0].localeCompare(b[0],'ar'));
+  const name=sel?'الراكد - '+short(sel):'الراكد لكل الفروع';
+  if(typeof XLSX==='undefined'){csv(rows,name);return}
+  const wb=XLSX.utils.book_new();wb.Workbook={Views:[{RTL:true}]};const used=new Set();
+  if(sel){XLSX.utils.book_append_sheet(wb,sheet(rows),nm(sel,used))}
+  else{XLSX.utils.book_append_sheet(wb,sheet(rows),'كل الفروع');used.add('كل الفروع');
+    [...new Set(rows.map(r=>r[0]))].forEach(b=>XLSX.utils.book_append_sheet(wb,sheet(rows.filter(r=>r[0]===b)),nm(b,used)))}
+  saveWB(wb,name);
+};
+})();
+</script>
+
+<script>
+(function(){
+const b1=document.getElementById('xplan'),b2=document.getElementById('xstag2');
+const lab=()=>{b1.textContent=sel?'تصدير الخطة Excel — '+short(sel):'تصدير الخطة Excel';b2.textContent=sel?'تصدير الراكد Excel — '+short(sel):'تصدير الراكد Excel'};
+const _u4=update;update=function(){_u4();lab()};lab();
+b2.onclick=()=>document.getElementById('xbtn').click();
+const H=['الرمز الخطي','الصنف','من (الفرع)','إلى (الفرع)','الكمية','متاح عند المستلم','مباع عند المستلم (90 يوم)','نوع التوزيع'];
+const kd=r=>r[5]?'للأعلى مبيعاً في الفئة (الصنف بلا مبيعات)':'للأعلى مبيعاً للصنف';
+const line=r=>[r[0],r[1],r[2],r[3],r[4],r[6],r[7],kd(r)];
+const sheet=rows=>{const a=[H,...rows.map(line),['الإجمالي','','','',rows.reduce((s,r)=>s+r[4],0),'','','']];const ws=XLSX.utils.aoa_to_sheet(a);ws['!cols']=[{wch:14},{wch:44},{wch:22},{wch:22},{wch:9},{wch:16},{wch:20},{wch:36}];ws['!views']=[{rightToLeft:true}];return ws};
+const nm=(s,used)=>{let n=('من '+short(s)).replace(/[\\\/?*\[\]:]/g,' ').slice(0,28),k=n,i=2;while(used.has(k))k=n.slice(0,26)+' '+i++;used.add(k);return k};
+function csv(rows,name){const a=[H,...rows.map(line)].map((r,j)=>r.map((x,i)=>i===0&&j>0?'="'+x+'"':'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n');saveFile(name+'.csv',['\ufeff'+a].join(''),'text/csv;charset=utf-8')}
+b1.onclick=()=>{if(sel&&window.exportBranch){window.exportBranch();return}
+  const m=minq(),px=(document.getElementById('pq').value||'').trim().toLowerCase();const rows=P.filter(r=>r[4]>=m&&(!sel||r[2]===sel||r[3]===sel)&&(!px||(r[0]+' '+r[1]+' '+r[2]+' '+r[3]).toLowerCase().includes(px))).slice().sort((a,b)=>a[2]===b[2]?(a[0]===b[0]?b[4]-a[4]:(a[0]<b[0]?-1:1)):a[2].localeCompare(b[2],'ar'));
+  const name=sel?'خطة التحريك - '+short(sel):'خطة التحريك';
+  if(typeof XLSX==='undefined'){csv(rows,name);return}
+  const wb=XLSX.utils.book_new();wb.Workbook={Views:[{RTL:true}]};const used=new Set(['كل الخطة']);
+  XLSX.utils.book_append_sheet(wb,sheet(rows),'كل الخطة');
+  [...new Set(rows.map(r=>r[2]))].forEach(b=>XLSX.utils.book_append_sheet(wb,sheet(rows.filter(r=>r[2]===b)),nm(b,used)));
+  saveWB(wb,name);
+};
+})();
+</script>
+
+<script>
+(function(){
+const $f=id=>document.getElementById(id),fsel=$f('fsel'),fmin=$f('fmin');
+const BN=[...new Set(D.map(r=>r[0]))].sort((a,b)=>a.localeCompare(b,'ar'));
+fsel.innerHTML='<option value="">كل الفروع</option>'+BN.map(b=>`<option value="${b}">${b}</option>`).join('');
+const nz=s=>String(s).toLowerCase().replace(/[\u064B-\u0652\u0640\s]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه');
+const bm=v=>{const n=nz(v);if(n.length<2)return null;const m=BN.filter(b=>nz(b).includes(n)||nz(short(b)).includes(n));return m.find(b=>nz(short(b))===n||nz(b)===n)||(m.length===1?m[0]:null)};
+const deb=(f,ms=140)=>{let h;return v=>{clearTimeout(h);h=setTimeout(()=>f(v),ms)}};
+const setSel=b=>{sel=b;update()};
+const dq=deb(v=>{const b=bm(v);if(b){$f('q').value='';query='';setSel(b)}else{query=v;table()}});
+const dp=deb(v=>{const b=bm(v);if(b){$f('pq').value='';setPQ('');setSel(b)}else setPQ(v)});
+$f('q').oninput=e=>dq(e.target.value);
+$f('pq').oninput=e=>dp(e.target.value);
+fsel.onchange=()=>setSel(fsel.value||null);
+fmin.oninput=deb(()=>{if(+fmin.value<3)fmin.value=3;renderPlan()},200);
+$f('freset').onclick=()=>{$f('q').value='';$f('pq').value='';query='';setPQ('');fmin.value=3;setSel(null)};
+const _u5=update;update=function(){_u5();fsel.value=sel||''};
+fsel.value=sel||'';
+})();
+</script>
+
+<script>
+(function(){
+const $b=id=>document.getElementById(id);
+const txt=()=>($b('pq').value||'').trim().toLowerCase();
+function data(){
+  const m=window.minq(),q=txt(),out={};
+  P.forEach(r=>{if(r[2]===sel&&r[4]>=m)(out[r[0]]=out[r[0]]||[]).push(r)});
+  const rows=D.filter(r=>r[0]===sel&&(!q||(r[1]+' '+r[2]).toLowerCase().includes(q))).sort((a,b)=>b[5]-a[5]).map(r=>{const ls=(out[r[1]]||[]).slice().sort((x,y)=>y[4]-x[4]);const mv=ls.reduce((s,x)=>s+x[4],0);return {r,ls,mv,rem:r[5]-mv}});
+  const inc=P.filter(r=>r[3]===sel&&r[4]>=m&&(!q||(r[0]+' '+r[1]+' '+r[2]).toLowerCase().includes(q))).sort((a,b)=>b[4]-a[4]);
+  return {rows,inc};
+}
+function render(){
+  const w=$b('bwrap'),pt=$b('ptbl').parentElement;
+  if(!sel){w.style.display='none';pt.style.display='';return}
+  w.style.display='';pt.style.display='none';
+  const {rows,inc}=data();
+  const chips=ls=>ls.length?ls.map(x=>`<span class="pill" style="--c:${x[5]?'var(--teal)':'var(--gold2)'};margin:2px 0 2px 4px;display:inline-block">${short(x[3])} · ${x[4]}</span>`).join(''):'<span style="color:var(--dim)">لا يتحرك</span>';
+  $b('bouth').textContent=`الراكد في ${short(sel)} وإلى أين يتحرك`;
+  $b('bout').innerHTML='<thead><tr><th>الصنف</th><th>الرمز الخطي</th><th>المتاح</th><th>مباع 90 يوم</th><th>الراكد</th><th>يتحرك إلى (الفروع الأعلى مبيعاً)</th><th>المتحرك</th><th>المتبقي</th></tr></thead><tbody>'+
+   rows.map(o=>`<tr><td class="it">${o.r[2]}</td><td class="num">${o.r[1]}</td><td class="num">${o.r[3]}</td><td class="num">${o.r[4]}</td><td class="num"><b>${o.r[5]}</b></td><td style="white-space:normal;min-width:240px">${chips(o.ls)}</td><td class="num">${o.mv}</td><td class="num">${o.rem}</td></tr>`).join('')+
+   `<tr><td class="it"><b>الإجمالي</b></td><td></td><td class="num">${rows.reduce((s,o)=>s+o.r[3],0)}</td><td class="num">${rows.reduce((s,o)=>s+o.r[4],0)}</td><td class="num"><b>${rows.reduce((s,o)=>s+o.r[5],0)}</b></td><td></td><td class="num"><b>${rows.reduce((s,o)=>s+o.mv,0)}</b></td><td class="num">${rows.reduce((s,o)=>s+o.rem,0)}</td></tr></tbody>`;
+  $b('binh').textContent=`ما يستلمه ${short(sel)} من فروع أخرى (${inc.reduce((s,r)=>s+r[4],0)} وحدة)`;
+  $b('bin').innerHTML='<thead><tr><th>الصنف</th><th>الرمز الخطي</th><th>من</th><th>الكمية</th><th>متاح عندي</th><th>مباع عندي 90 يوم</th></tr></thead><tbody>'+
+   (inc.length?inc.map(r=>`<tr><td class="it">${r[1]}</td><td class="num">${r[0]}</td><td>${short(r[2])}</td><td class="num"><b>${r[4]}</b></td><td class="num">${r[6]}</td><td class="num">${r[7]}</td></tr>`).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--dim)">لا يستلم شيئاً</td></tr>')+'</tbody>';
+  $b('pcnt').textContent=`${rows.length} صنف راكد · ${inc.length} سطر استلام`;
+}
+const _rp=window.renderPlan;window.renderPlan=function(){_rp();render()};
+window.exportBranch=function(){
+  const {rows,inc}=data(),name='خطة '+short(sel);
+  const A=[['الرمز الخطي','الصنف','المتاح','مباع 90 يوم','الراكد','يتحرك إلى','المتحرك','المتبقي'],...rows.map(o=>[o.r[1],o.r[2],o.r[3],o.r[4],o.r[5],o.ls.map(x=>short(x[3])+' '+x[4]).join(' + ')||'لا يتحرك',o.mv,o.rem])];
+  A.push(['الإجمالي','',rows.reduce((s,o)=>s+o.r[3],0),rows.reduce((s,o)=>s+o.r[4],0),rows.reduce((s,o)=>s+o.r[5],0),'',rows.reduce((s,o)=>s+o.mv,0),rows.reduce((s,o)=>s+o.rem,0)]);
+  const B=[['الرمز الخطي','الصنف','من','الكمية','متاح عندي','مباع عندي 90 يوم'],...inc.map(r=>[r[0],r[1],short(r[2]),r[4],r[6],r[7]])];
+  if(typeof XLSX==='undefined'){saveFile(name+'.csv',['\ufeff'+A.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n')].join(''),'text/csv;charset=utf-8');return}
+  const wb=XLSX.utils.book_new();wb.Workbook={Views:[{RTL:true}]};
+  const a=XLSX.utils.aoa_to_sheet(A);a['!cols']=[{wch:14},{wch:44},{wch:9},{wch:12},{wch:9},{wch:50},{wch:10},{wch:10}];a['!views']=[{rightToLeft:true}];
+  const b=XLSX.utils.aoa_to_sheet(B);b['!cols']=[{wch:14},{wch:44},{wch:22},{wch:9},{wch:12},{wch:18}];b['!views']=[{rightToLeft:true}];
+  XLSX.utils.book_append_sheet(wb,a,'يرسل');XLSX.utils.book_append_sheet(wb,b,'يستلم');saveWB(wb,name);
+};
+render();
+})();
+</script>
+<script>
+(function(){
+const root=document.documentElement,btn=document.getElementById('tg'),mq=matchMedia('(prefers-color-scheme: dark)');
+const cur=()=>root.getAttribute('data-theme')||(mq.matches?'dark':'light');
+function sync(){const t=cur();btn.setAttribute('aria-label',t==='dark'?'التبديل إلى الوضع النهاري':'التبديل إلى الوضع الليلي');
+  let m=document.querySelector('meta[name=theme-color]');if(!m){m=document.createElement('meta');m.name='theme-color';document.head.appendChild(m)}
+  m.content=getComputedStyle(document.body).backgroundColor}
+btn.onclick=()=>{const n=cur()==='dark'?'light':'dark';root.setAttribute('data-theme',n);try{localStorage.setItem('radar-theme',n)}catch(e){}sync()};
+if(mq.addEventListener)mq.addEventListener('change',sync);
+sync();
+})();
+</script>
+</body></html>
